@@ -12,9 +12,11 @@
     "build": "tsc --build",
     "typecheck": "tsc --noEmit",
     "lint": "echo skip",
+    "test": "vitest run",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "devDependencies": {
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
   }
 }
