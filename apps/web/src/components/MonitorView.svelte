@@ -1,6 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { SegmentedControl, BUTTON_PRIMARY, BUTTON_SECONDARY } from "@emdzej/stm-ui";
+  import {
+    SegmentedControl,
+    VirtualLineList,
+    BUTTON_PRIMARY,
+    BUTTON_SECONDARY,
+  } from "@emdzej/stm-ui";
   import { bridge } from "../lib/serial-bridge.svelte";
   import { app } from "../lib/state.svelte";
   import { settings } from "../lib/settings.svelte";
@@ -13,37 +18,52 @@
     parseHex,
   } from "../lib/format";
 
-  const MAX_ASCII_CHARS = 256 * 1024;
-  const MAX_HEX_ROWS = 4096;
+  const MAX_ASCII_LINES = 8192;
+  const MAX_HEX_ROWS = 65_536;
+  const LINE_HEIGHT = 16; // matches font-size: 12px (text-xs) + line-height 16
 
   let composer = $state("");
   let paused = $state(false);
 
-  let asciiText = $state("");
+  /** ASCII output split on `\n`. The trailing line may be incomplete until a
+   * `\n` arrives; we keep appending to the last entry. */
+  let asciiLines = $state<string[]>([""]);
   let hexRows = $state<string[]>([]);
+  /** Trailing partial row (< 16 bytes). Rendered as the last line so sub-16
+   * data is visible immediately; promoted into hexRows on the next chunk. */
   let hexTail = $state("");
   let hexOffset = 0;
   let hexAccum = new Uint8Array(0);
 
-  let viewport: HTMLDivElement | null = null;
   let composerInput: HTMLInputElement | null = null;
+
+  // Combined list passed to the virtual hex view: committed rows plus the
+  // optional in-progress tail.
+  const hexLines = $derived(hexTail ? [...hexRows, hexTail] : hexRows);
 
   onMount(() => {
     const off = bridge.onData((bytes) => {
       if (paused) return;
       appendAscii(bytes);
       appendHex(bytes);
-      queueMicrotask(() => {
-        if (viewport) viewport.scrollTop = viewport.scrollHeight;
-      });
     });
     return off;
   });
 
   function appendAscii(bytes: Uint8Array): void {
-    const next = asciiText + decodeForAscii(bytes);
-    asciiText =
-      next.length > MAX_ASCII_CHARS ? next.slice(next.length - MAX_ASCII_CHARS) : next;
+    const decoded = decodeForAscii(bytes);
+    if (!decoded) return;
+    // \r at the end of a line is a non-issue for display in whitespace-pre
+    // mode, but \r in the middle (e.g. progress bars) would overwrite — we
+    // accept the simpler split-on-\n model here. Terminal mode is the right
+    // tool when devices use \r tricks.
+    const parts = decoded.split("\n");
+    const lastIdx = asciiLines.length - 1;
+    asciiLines[lastIdx] = asciiLines[lastIdx] + parts[0];
+    for (let i = 1; i < parts.length; i++) asciiLines.push(parts[i]);
+    if (asciiLines.length > MAX_ASCII_LINES) {
+      asciiLines = asciiLines.slice(asciiLines.length - MAX_ASCII_LINES);
+    }
   }
 
   function appendHex(bytes: Uint8Array): void {
@@ -67,7 +87,7 @@
   }
 
   function clear(): void {
-    asciiText = "";
+    asciiLines = [""];
     hexRows = [];
     hexTail = "";
     hexOffset = 0;
@@ -97,6 +117,12 @@
         bytes = parseHex(composer);
       }
       await bridge.write(bytes);
+      if (settings.monitor.echoLocal) {
+        // Pipe the same bytes back through our append so the user sees what
+        // they sent in the stream view. Identical formatting to incoming data.
+        appendAscii(bytes);
+        appendHex(bytes);
+      }
       composer = "";
       composerInput?.focus();
     } catch (err) {
@@ -112,7 +138,7 @@
   }
 
   function downloadLog(): void {
-    const blob = new Blob([asciiText], { type: "text/plain" });
+    const blob = new Blob([asciiLines.join("\n")], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -120,6 +146,12 @@
     a.click();
     URL.revokeObjectURL(url);
   }
+
+  const empty = $derived(
+    settings.monitor.view === "ascii"
+      ? asciiLines.length === 1 && asciiLines[0] === ""
+      : hexLines.length === 0,
+  );
 </script>
 
 <div class="flex h-full flex-col">
@@ -149,27 +181,23 @@
     <button class={BUTTON_SECONDARY} onclick={downloadLog}>Save</button>
   </div>
 
-  <div
-    bind:this={viewport}
-    class="flex-1 overflow-auto whitespace-pre bg-base p-3 font-mono text-xs text-foreground"
-  >
-    {#if settings.monitor.view === "ascii"}
-      {#if asciiText.length === 0}
-        <span class="italic text-faint">(waiting for data…)</span>
-      {:else}
-        {asciiText}
-      {/if}
-    {:else if hexRows.length === 0 && hexTail === ""}
-      <span class="italic text-faint">(waiting for data…)</span>
-    {:else}
-      {#each hexRows as row, i (i)}
-        <div>{row}</div>
-      {/each}
-      {#if hexTail}
-        <div>{hexTail}</div>
-      {/if}
-    {/if}
-  </div>
+  {#if empty}
+    <div class="flex flex-1 items-center justify-center bg-base p-3 font-mono text-xs italic text-faint">
+      (waiting for data…)
+    </div>
+  {:else if settings.monitor.view === "ascii"}
+    <VirtualLineList
+      class="flex-1 bg-base px-3 py-2 font-mono text-xs text-foreground"
+      lines={asciiLines}
+      lineHeight={LINE_HEIGHT}
+    />
+  {:else}
+    <VirtualLineList
+      class="flex-1 bg-base px-3 py-2 font-mono text-xs text-foreground"
+      lines={hexLines}
+      lineHeight={LINE_HEIGHT}
+    />
+  {/if}
 
   <div class="border-t border-divider bg-surface p-2">
     <div class="flex items-center gap-2 text-xs">
