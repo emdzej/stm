@@ -19,7 +19,10 @@ class ReactiveLogging {
     if (!this.available || this.current) return;
     try {
       const meta = await this.svc.start({ config: cfg, transport });
-      this.current = meta;
+      // Shallow copy so this.current is a separate object — the service
+      // mutates its own meta for IDB persistence; this wrapper owns the
+      // reactive mirror that the UI binds to.
+      this.current = { ...meta };
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("[STM] logging start failed:", err);
@@ -39,6 +42,12 @@ class ReactiveLogging {
 
   append(bytes: Uint8Array): void {
     this.svc.append(bytes);
+    // Mirror the count so the UI sees live progress. Both the wrapper and
+    // the service increment by the same delta on the same code path, so
+    // they stay in sync; the service's value is what lands in IDB on stop.
+    if (this.current) {
+      this.current.byteCount += bytes.byteLength;
+    }
   }
 
   list(): Promise<SessionMeta[]> {
