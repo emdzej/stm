@@ -10,6 +10,7 @@
   import ConnectDialog from "./components/ConnectDialog.svelte";
   import ReconfigureDialog from "./components/ReconfigureDialog.svelte";
   import LogsDialog from "./components/LogsDialog.svelte";
+  import ZmodemDialog from "./components/ZmodemDialog.svelte";
   import ErrorBanner from "./components/ErrorBanner.svelte";
   import HomeView from "./components/HomeView.svelte";
   import MonitorView from "./components/MonitorView.svelte";
@@ -140,4 +141,5 @@
   <ReconfigureDialog />
   <SettingsDialog />
   <LogsDialog />
+  <ZmodemDialog />
 </div>

@@ -7,6 +7,7 @@
   import "@xterm/xterm/css/xterm.css";
   import { bridge } from "../lib/serial-bridge.svelte";
   import { settings } from "../lib/settings.svelte";
+  import { createZmodemPipe } from "../lib/zmodem.svelte";
 
   let container: HTMLDivElement;
 
@@ -90,18 +91,27 @@
     });
 
     const encoder = new TextEncoder();
-    const off = bridge.onData((bytes) => {
-      // 8-bit-clean off → strip the high bit on incoming data for legacy
-      // 7-bit setups. Settings is a $state proxy so this read picks up
-      // toggles live, no remount needed.
-      if (!settings.terminal.eightBitClean) {
-        const masked = new Uint8Array(bytes.length);
-        for (let i = 0; i < bytes.length; i++) masked[i] = bytes[i] & 0x7f;
-        term.write(masked);
-      } else {
-        term.write(bytes);
-      }
+    // ZMODEM pipe sits between bridge and terminal: it intercepts ZMODEM
+    // frames (auto-detects when the device runs `sz file`) and passes
+    // everything else through to the terminal verbatim.
+    const zpipe = createZmodemPipe({
+      toTerminal: (bytes) => {
+        if (!settings.terminal.eightBitClean) {
+          const masked = new Uint8Array(bytes.length);
+          for (let i = 0; i < bytes.length; i++) masked[i] = bytes[i] & 0x7f;
+          term.write(masked);
+        } else {
+          term.write(bytes);
+        }
+      },
+      send: (bytes) => {
+        void bridge.write(bytes).catch((err) => {
+          // eslint-disable-next-line no-console
+          console.error("[STM] zmodem send failed:", err);
+        });
+      },
     });
+    const off = bridge.onData((bytes) => zpipe.consume(bytes));
     const inputSub = term.onData((data) => {
       // xterm.js sends 0x7F (DEL) for the Backspace key by default. Bootloaders
       // and some legacy systems expect 0x08 (^H) — remap when requested.
@@ -125,6 +135,7 @@
       ro.disconnect();
       off();
       inputSub.dispose();
+      zpipe.destroy();
       term.dispose();
     };
   });

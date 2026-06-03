@@ -183,6 +183,59 @@
 
   <section class="mb-5">
     <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">
+      Macros
+    </h3>
+    <p class="mb-2 text-xs text-faint">
+      Named byte sequences callable from Monitor and Terminal toolbars. Payload
+      supports <code class="font-mono">\r</code> <code class="font-mono">\n</code>
+      <code class="font-mono">\t</code> <code class="font-mono">\0</code>
+      <code class="font-mono">\\</code> and <code class="font-mono">\xNN</code>
+      escapes.
+    </p>
+    <div class="space-y-2 text-xs">
+      {#each settings.macros as m, idx (m.id)}
+        <div class="flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            class="w-28 rounded border border-divider bg-base px-2 py-1 font-mono"
+            bind:value={settings.macros[idx].name}
+            placeholder="Name"
+          />
+          <input
+            type="text"
+            class="flex-1 min-w-[12rem] rounded border border-divider bg-base px-2 py-1 font-mono"
+            bind:value={settings.macros[idx].payload}
+            placeholder="e.g. AT+CSQ\r"
+          />
+          <button
+            class="rounded border border-danger bg-surface px-2 py-0.5 text-danger transition hover:bg-danger/10"
+            onclick={() => {
+              if (confirm(`Delete macro "${m.name}"?`)) {
+                settings.macros = settings.macros.filter((x) => x.id !== m.id);
+              }
+            }}
+            title="Delete macro"
+          >
+            Remove
+          </button>
+        </div>
+      {/each}
+      <button
+        class={BUTTON_SECONDARY}
+        onclick={() => {
+          settings.macros = [
+            ...settings.macros,
+            { id: crypto.randomUUID(), name: "New macro", payload: "" },
+          ];
+        }}
+      >
+        + Add macro
+      </button>
+    </div>
+  </section>
+
+  <section class="mb-5">
+    <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">
       Tunnel profiles
     </h3>
     {#if settings.tunnelProfiles.length === 0}

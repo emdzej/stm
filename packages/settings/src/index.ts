@@ -23,6 +23,14 @@ export interface TunnelProfile {
   token?: string;
 }
 
+export interface Macro {
+  id: string;
+  name: string;
+  /** Payload as a text string. Supports backslash escapes interpreted at
+   * send time: `\r` `\n` `\t` `\0` `\\` `\xNN`. */
+  payload: string;
+}
+
 export interface MonitorPrefs {
   view: "ascii" | "hex";
   composerMode: "ascii" | "hex";
@@ -75,6 +83,7 @@ export interface Settings {
   schemaVersion: number;
   serialPresets: SerialPreset[];
   tunnelProfiles: TunnelProfile[];
+  macros: Macro[];
   connect: ConnectPrefs;
   monitor: MonitorPrefs;
   terminal: TerminalPrefs;
@@ -96,6 +105,7 @@ export const DEFAULTS: Settings = {
     },
   ],
   tunnelProfiles: [],
+  macros: [],
   connect: {
     transport: "web-serial",
     tunnelUrl: "ws://127.0.0.1:8787",
@@ -138,6 +148,7 @@ function merge(parsed: Partial<Settings>): Settings {
     logging: { ...DEFAULTS.logging, ...(parsed.logging ?? {}) },
     serialPresets: parsed.serialPresets ?? DEFAULTS.serialPresets,
     tunnelProfiles: parsed.tunnelProfiles ?? DEFAULTS.tunnelProfiles,
+    macros: parsed.macros ?? DEFAULTS.macros,
     schemaVersion: SCHEMA_VERSION,
   };
 }

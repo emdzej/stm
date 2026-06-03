@@ -79,9 +79,12 @@
       ({bridge.metrics.rxRate.toFixed(0)} B/s) · tx {bridge.metrics.txBytes.toLocaleString()} B
     </span>
     <span class="flex-1"></span>
-    <button class={BUTTON_SECONDARY} title="X/Y/ZMODEM — coming soon" disabled>
+    <button class={BUTTON_SECONDARY} title="ZMODEM send — coming soon" disabled>
       Send file…
     </button>
+    <span class="text-faint" title="Run `sz file` on the device to send a file in. The web app auto-detects the ZMODEM start sequence.">
+      sz ⇒ download
+    </span>
     <button class={BUTTON_SECONDARY} title="Macros — coming soon" disabled>
       Macros
     </button>

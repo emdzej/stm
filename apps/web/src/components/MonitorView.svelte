@@ -4,6 +4,7 @@
   import { bridge } from "../lib/serial-bridge.svelte";
   import { app } from "../lib/state.svelte";
   import { settings } from "../lib/settings.svelte";
+  import MacroPicker from "./MacroPicker.svelte";
   import {
     decodeForAscii,
     encodeAscii,
@@ -135,6 +136,7 @@
       ({bridge.metrics.rxRate.toFixed(0)} B/s) · tx {bridge.metrics.txBytes.toLocaleString()} B
     </span>
     <span class="flex-1"></span>
+    <MacroPicker />
     <button
       class={paused
         ? "rounded border border-warning bg-surface px-2 py-0.5 text-warning transition hover:bg-elevated"
