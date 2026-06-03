@@ -5,6 +5,7 @@
   import { settings } from "../lib/settings.svelte";
   import { isWebSerialAvailable } from "@emdzej/stm-serial-core";
   import SerialConfigForm from "./SerialConfigForm.svelte";
+  import SerialPresetPicker from "./SerialPresetPicker.svelte";
 
   // Persisted transport choice could refer to Web Serial in a browser that
   // doesn't actually support it (e.g. user reopened on Firefox). Force-flip
@@ -169,6 +170,7 @@
     </div>
   {/if}
 
+  <SerialPresetPicker bind:config={settings.connect.config} />
   <SerialConfigForm bind:config={settings.connect.config} />
 
   <div class="flex justify-end gap-2 text-xs">

@@ -183,6 +183,46 @@
 
   <section class="mb-5">
     <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">
+      Serial presets
+    </h3>
+    {#if settings.serialPresets.length === 0}
+      <p class="text-xs text-faint">
+        No saved presets. Save one from the Connect or Reconfigure dialog.
+      </p>
+    {:else}
+      <div class="space-y-2 text-xs">
+        {#each settings.serialPresets as p, idx (p.id)}
+          <div class="flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              class="w-32 rounded border border-divider bg-base px-2 py-1 font-mono"
+              bind:value={settings.serialPresets[idx].name}
+              placeholder="Name"
+            />
+            <span class="flex-1 font-mono text-faint">
+              {p.baudRate} {p.dataBits}{p.parity[0].toUpperCase()}{p.stopBits}
+              · flow:{p.flowControl}
+            </span>
+            <button
+              class="rounded border border-danger bg-surface px-2 py-0.5 text-danger transition hover:bg-danger/10"
+              onclick={() => {
+                if (confirm(`Delete serial preset "${p.name}"?`)) {
+                  settings.serialPresets = settings.serialPresets.filter(
+                    (x) => x.id !== p.id,
+                  );
+                }
+              }}
+            >
+              Remove
+            </button>
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </section>
+
+  <section class="mb-5">
+    <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">
       Macros
     </h3>
     <p class="mb-2 text-xs text-faint">

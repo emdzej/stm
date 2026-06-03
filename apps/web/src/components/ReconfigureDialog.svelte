@@ -4,6 +4,7 @@
   import { bridge } from "../lib/serial-bridge.svelte";
   import type { SerialConfig } from "@emdzej/stm-serial-core";
   import SerialConfigForm from "./SerialConfigForm.svelte";
+  import SerialPresetPicker from "./SerialPresetPicker.svelte";
 
   function snapshot(): SerialConfig {
     return bridge.activeConfig
@@ -50,6 +51,7 @@
   <p class="mb-3 text-xs text-muted">
     Applies new serial parameters to the currently-open port without re-prompting.
   </p>
+  <SerialPresetPicker bind:config />
   <SerialConfigForm bind:config />
   <div class="flex justify-end gap-2 text-xs">
     <button class={BUTTON_SECONDARY} onclick={close}>Cancel</button>
