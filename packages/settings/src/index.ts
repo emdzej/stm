@@ -53,9 +53,23 @@ export interface TerminalPrefs {
   rows: number;
   fontSize: number;
   cursorStyle: "block" | "underline" | "bar";
+  /** What the Backspace key emits. `"del"` = 0x7F (modern shells, GNU
+   * readline default). `"ctrl-h"` = 0x08 (many bootloaders, older systems). */
+  backspaceMode: "del" | "ctrl-h";
+  /** When true, locally write outgoing keystrokes to the terminal as well
+   * as sending them. Use for devices that don't echo. */
+  localEcho: boolean;
+  /** When false, strip the high bit on incoming bytes (legacy 7-bit clean). */
+  eightBitClean: boolean;
 }
 
 export type ThemeChoice = "system" | "light" | "dark";
+
+export interface LoggingPrefs {
+  /** When true, the app records every connected session's incoming bytes
+   * into OPFS with metadata in IndexedDB. */
+  enabled: boolean;
+}
 
 export interface Settings {
   schemaVersion: number;
@@ -64,6 +78,7 @@ export interface Settings {
   connect: ConnectPrefs;
   monitor: MonitorPrefs;
   terminal: TerminalPrefs;
+  logging: LoggingPrefs;
   theme: ThemeChoice;
 }
 
@@ -94,7 +109,16 @@ export const DEFAULTS: Settings = {
     },
   },
   monitor: { view: "ascii", composerMode: "ascii", lineEnding: "lf", echoLocal: false },
-  terminal: { cols: 80, rows: 25, fontSize: 13, cursorStyle: "block" },
+  terminal: {
+    cols: 80,
+    rows: 25,
+    fontSize: 13,
+    cursorStyle: "block",
+    backspaceMode: "del",
+    localEcho: false,
+    eightBitClean: true,
+  },
+  logging: { enabled: false },
   theme: "system",
 };
 
@@ -111,6 +135,7 @@ function merge(parsed: Partial<Settings>): Settings {
     },
     monitor: { ...DEFAULTS.monitor, ...(parsed.monitor ?? {}) },
     terminal: { ...DEFAULTS.terminal, ...(parsed.terminal ?? {}) },
+    logging: { ...DEFAULTS.logging, ...(parsed.logging ?? {}) },
     serialPresets: parsed.serialPresets ?? DEFAULTS.serialPresets,
     tunnelProfiles: parsed.tunnelProfiles ?? DEFAULTS.tunnelProfiles,
     schemaVersion: SCHEMA_VERSION,

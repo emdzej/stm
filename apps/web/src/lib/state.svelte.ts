@@ -15,9 +15,9 @@ interface AppState {
   view: AppView;
   connection: ConnectionState;
   showSettings: boolean;
-  showAbout: boolean;
   showConnect: boolean;
   showReconfigure: boolean;
+  showLogs: boolean;
   bannerError: string | null;
 }
 
@@ -25,8 +25,8 @@ export const app = $state<AppState>({
   view: "home",
   connection: { kind: "disconnected" },
   showSettings: false,
-  showAbout: false,
   showConnect: false,
   showReconfigure: false,
+  showLogs: false,
   bannerError: null,
 });

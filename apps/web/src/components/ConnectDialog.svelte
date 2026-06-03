@@ -13,8 +13,45 @@
     settings.connect.transport = "tunnel";
   }
 
+  let selectedProfileId = $state<string | "new">("new");
+  let savingName = $state<string | null>(null);
+
   function close(): void {
     app.showConnect = false;
+  }
+
+  function pickProfile(id: string): void {
+    selectedProfileId = id;
+    if (id === "new") return;
+    const profile = settings.tunnelProfiles.find((p) => p.id === id);
+    if (profile) {
+      settings.connect.tunnelUrl = profile.url;
+      settings.connect.tunnelToken = profile.token ?? "";
+    }
+  }
+
+  function startSaveProfile(): void {
+    savingName = "";
+  }
+
+  function cancelSaveProfile(): void {
+    savingName = null;
+  }
+
+  function confirmSaveProfile(): void {
+    if (!savingName) return;
+    const id = crypto.randomUUID();
+    settings.tunnelProfiles = [
+      ...settings.tunnelProfiles,
+      {
+        id,
+        name: savingName,
+        url: settings.connect.tunnelUrl,
+        token: settings.connect.tunnelToken,
+      },
+    ];
+    selectedProfileId = id;
+    savingName = null;
   }
 
   async function connect(): Promise<void> {
@@ -66,6 +103,40 @@
   {/if}
 
   {#if settings.connect.transport === "tunnel"}
+    {#if settings.tunnelProfiles.length > 0 || savingName !== null}
+      <div class="mb-2 flex items-center gap-2 text-xs">
+        <span class="text-muted">Profile</span>
+        <select
+          value={selectedProfileId}
+          onchange={(e) => pickProfile((e.currentTarget as HTMLSelectElement).value)}
+          class="flex-1 rounded border border-divider bg-base px-2 py-1 font-mono"
+        >
+          <option value="new">New connection</option>
+          {#each settings.tunnelProfiles as p (p.id)}
+            <option value={p.id}>{p.name}</option>
+          {/each}
+        </select>
+        {#if savingName === null}
+          <button class={BUTTON_SECONDARY} onclick={startSaveProfile}>Save as new…</button>
+        {:else}
+          <input
+            type="text"
+            placeholder="Profile name"
+            class="w-32 rounded border border-divider bg-base px-2 py-1 font-mono"
+            bind:value={savingName}
+            onkeydown={(e) => e.key === "Enter" && confirmSaveProfile()}
+          />
+          <button class={BUTTON_SECONDARY} disabled={!savingName} onclick={confirmSaveProfile}>
+            Save
+          </button>
+          <button class={BUTTON_SECONDARY} onclick={cancelSaveProfile}>Cancel</button>
+        {/if}
+      </div>
+    {:else}
+      <div class="mb-2 flex justify-end text-xs">
+        <button class={BUTTON_SECONDARY} onclick={startSaveProfile}>Save as profile…</button>
+      </div>
+    {/if}
     <label class="mb-2 block text-xs">
       <span class="block text-muted">Tunnel URL</span>
       <input

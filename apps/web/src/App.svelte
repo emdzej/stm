@@ -4,11 +4,12 @@
   import { bridge } from "./lib/serial-bridge.svelte";
   import { installAutoSave, settings } from "./lib/settings.svelte";
   import { installThemeApplier } from "./lib/theme.svelte";
+  import { installLogging } from "./lib/logging.svelte";
   import ConnectButton from "./components/ConnectButton.svelte";
   import SettingsDialog from "./components/SettingsDialog.svelte";
-  import AboutDialog from "./components/AboutDialog.svelte";
   import ConnectDialog from "./components/ConnectDialog.svelte";
   import ReconfigureDialog from "./components/ReconfigureDialog.svelte";
+  import LogsDialog from "./components/LogsDialog.svelte";
   import ErrorBanner from "./components/ErrorBanner.svelte";
   import HomeView from "./components/HomeView.svelte";
   import MonitorView from "./components/MonitorView.svelte";
@@ -17,6 +18,7 @@
 
   installAutoSave();
   installThemeApplier();
+  installLogging();
 
   function home(): void {
     app.view = "home";
@@ -39,15 +41,17 @@
     >
       STM
     </button>
-    <button
+    <a
+      href="https://github.com/emdzej/stm/releases/tag/{__APP_VERSION__}"
+      target="_blank"
+      rel="noopener noreferrer"
       class="text-xs text-faint underline-offset-2 transition hover:text-foreground hover:underline"
-      onclick={() => (app.showAbout = true)}
-      title="About STM — version, source, report an issue"
+      title="Release notes for {__APP_VERSION__}"
     >
       {__APP_VERSION__}
-    </button>
+    </a>
     <a
-      href="https://github.com/"
+      href="https://github.com/emdzej/stm"
       target="_blank"
       rel="noopener noreferrer"
       class="text-faint transition hover:text-foreground"
@@ -135,5 +139,5 @@
   <ConnectDialog />
   <ReconfigureDialog />
   <SettingsDialog />
-  <AboutDialog />
+  <LogsDialog />
 </div>

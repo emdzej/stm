@@ -13,6 +13,7 @@
     "clean": "rm -rf dist .vite"
   },
   "dependencies": {
+    "@emdzej/stm-logging": "workspace:*",
     "@emdzej/stm-serial-core": "workspace:*",
     "@emdzej/stm-serial-worker": "workspace:*",
     "@emdzej/stm-settings": "workspace:*",

@@ -77,4 +77,4 @@ Initial release.
 - Settings dialog content is currently a placeholder — JSON import/export and a preset library land in a follow-up release.
 - X / Y / ZMODEM file transfer and OPFS session logging are scaffolded but not yet implemented.
 
-[0.1.0]: https://github.com/emdzej/stm/releases/tag/v0.1.0
+[0.1.0]: https://github.com/emdzej/stm/releases/tag/0.1.0

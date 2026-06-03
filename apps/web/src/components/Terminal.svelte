@@ -6,6 +6,7 @@
   import { WebglAddon } from "@xterm/addon-webgl";
   import "@xterm/xterm/css/xterm.css";
   import { bridge } from "../lib/serial-bridge.svelte";
+  import { settings } from "../lib/settings.svelte";
 
   let container: HTMLDivElement;
 
@@ -17,9 +18,9 @@
     const term = new Terminal({
       fontFamily:
         'ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace',
-      fontSize: 13,
+      fontSize: settings.terminal.fontSize,
       cursorBlink: true,
-      cursorStyle: "block",
+      cursorStyle: settings.terminal.cursorStyle,
       convertEol: false,
       scrollback: 10000,
       theme: {
@@ -74,10 +75,47 @@
     });
     ro.observe(container);
 
+    // Live-apply font size and cursor style changes from Settings without
+    // remounting. Refit after font size changes so geometry stays correct.
+    $effect(() => {
+      term.options.fontSize = settings.terminal.fontSize;
+      try {
+        fit.fit();
+      } catch {
+        // ignore — same reason as the ResizeObserver branch
+      }
+    });
+    $effect(() => {
+      term.options.cursorStyle = settings.terminal.cursorStyle;
+    });
+
     const encoder = new TextEncoder();
-    const off = bridge.onData((bytes) => term.write(bytes));
+    const off = bridge.onData((bytes) => {
+      // 8-bit-clean off → strip the high bit on incoming data for legacy
+      // 7-bit setups. Settings is a $state proxy so this read picks up
+      // toggles live, no remount needed.
+      if (!settings.terminal.eightBitClean) {
+        const masked = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) masked[i] = bytes[i] & 0x7f;
+        term.write(masked);
+      } else {
+        term.write(bytes);
+      }
+    });
     const inputSub = term.onData((data) => {
-      void bridge.write(encoder.encode(data)).catch((err) => {
+      // xterm.js sends 0x7F (DEL) for the Backspace key by default. Bootloaders
+      // and some legacy systems expect 0x08 (^H) — remap when requested.
+      let payload = data;
+      if (settings.terminal.backspaceMode === "ctrl-h") {
+        payload = payload.replace(/\x7f/g, "\x08");
+      }
+      // Local echo: also paint outgoing bytes to the terminal for devices
+      // that don't echo. Done before write so it's visible immediately even
+      // if the WS round-trip is slow.
+      if (settings.terminal.localEcho) {
+        term.write(payload);
+      }
+      void bridge.write(encoder.encode(payload)).catch((err) => {
         // eslint-disable-next-line no-console
         console.error("[STM] write failed:", err);
       });

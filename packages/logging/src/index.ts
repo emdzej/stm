@@ -1,8 +1,3 @@
-// OPFS-backed session log + IDB index. To be implemented.
-export interface SessionMeta {
-  id: string;
-  startedAt: number;
-  endedAt?: number;
-  label?: string;
-  byteCount: number;
-}
+export { LoggingService } from "./service.js";
+export type { SessionMeta, StartSessionInput } from "./service.js";
+export { isOpfsAvailable } from "./opfs.js";
