@@ -120,6 +120,38 @@
           bind:value={settings.terminal.cursorStyle}
         />
       </div>
+      <div>
+        <span class="mb-1 block text-muted">Geometry</span>
+        <SegmentedControl
+          options={[
+            { value: "fit", label: "Fit to container" },
+            { value: "fixed", label: "Fixed cols × rows" },
+          ]}
+          bind:value={settings.terminal.geometry}
+        />
+      </div>
+      {#if settings.terminal.geometry === "fixed"}
+        <label class="flex items-center gap-3 text-muted">
+          <span class="w-12">Cols</span>
+          <input
+            type="number"
+            min="20"
+            max="500"
+            class="w-20 rounded border border-divider bg-base px-2 py-1 font-mono"
+            bind:value={settings.terminal.cols}
+          />
+        </label>
+        <label class="flex items-center gap-3 text-muted">
+          <span class="w-12">Rows</span>
+          <input
+            type="number"
+            min="10"
+            max="200"
+            class="w-20 rounded border border-divider bg-base px-2 py-1 font-mono"
+            bind:value={settings.terminal.rows}
+          />
+        </label>
+      {/if}
       <label class="flex items-center gap-3 text-muted">
         <span>Font size</span>
         <input

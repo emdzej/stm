@@ -61,6 +61,9 @@ export interface TerminalPrefs {
   rows: number;
   fontSize: number;
   cursorStyle: "block" | "underline" | "bar";
+  /** Geometry mode. "fit" sizes the terminal to its container (default);
+   * "fixed" forces cols × rows and lets the container scroll if needed. */
+  geometry: "fit" | "fixed";
   /** What the Backspace key emits. `"del"` = 0x7F (modern shells, GNU
    * readline default). `"ctrl-h"` = 0x08 (many bootloaders, older systems). */
   backspaceMode: "del" | "ctrl-h";
@@ -124,6 +127,7 @@ export const DEFAULTS: Settings = {
     rows: 25,
     fontSize: 13,
     cursorStyle: "block",
+    geometry: "fit",
     backspaceMode: "del",
     localEcho: false,
     eightBitClean: true,

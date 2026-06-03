@@ -2,6 +2,7 @@
   import { BUTTON_SECONDARY } from "@emdzej/stm-ui";
   import { app } from "../lib/state.svelte";
   import { bridge } from "../lib/serial-bridge.svelte";
+  import { settings } from "../lib/settings.svelte";
   import { initiateSend } from "../lib/zmodem.svelte";
   import Terminal from "./Terminal.svelte";
   import MacroPicker from "./MacroPicker.svelte";
@@ -110,7 +111,11 @@
     <MacroPicker />
   </div>
 
-  <div class="flex-1 overflow-hidden bg-base">
+  <div
+    class="flex-1 bg-base"
+    class:overflow-hidden={settings.terminal.geometry === "fit"}
+    class:overflow-auto={settings.terminal.geometry === "fixed"}
+  >
     <Terminal />
   </div>
 
