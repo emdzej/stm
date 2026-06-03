@@ -1,0 +1,31 @@
+{
+  "name": "stm",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Web-based serial monitor and terminal. Web Serial or WebSocket tunnel.",
+  "packageManager": "pnpm@10.33.1",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "clean": "turbo run clean",
+    "web": "pnpm --filter @emdzej/stm-web dev",
+    "web:build": "pnpm --filter @emdzej/stm-web build",
+    "tunnel": "pnpm --filter @emdzej/stm-tunnel start"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.19.0",
+    "@types/node": "^22.13.1",
+    "eslint": "^9.19.0",
+    "prettier": "^3.5.1",
+    "turbo": "^2.8.10",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.22.0",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "@emdzej/stm-theme",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/preset.js",
+    "./tokens.css": "./src/tokens.css"
+  },
+  "files": ["src"],
+  "scripts": {
+    "build": "echo skip",
+    "lint": "echo skip",
+    "typecheck": "echo skip",
+    "clean": "echo skip"
+  },
+  "peerDependencies": {
+    "tailwindcss": "^3.4.0"
+  }
+}

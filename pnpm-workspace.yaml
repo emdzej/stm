@@ -1,0 +1,7 @@
+packages:
+  - "packages/*"
+  - "apps/*"
+allowBuilds:
+  '@serialport/bindings-cpp': false
+  esbuild: false
+  node-pty: true

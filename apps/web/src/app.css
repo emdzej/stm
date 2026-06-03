@@ -1,0 +1,5 @@
+@import "@emdzej/stm-theme/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

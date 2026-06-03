@@ -1,0 +1,41 @@
+{
+  "name": "@emdzej/stm-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Web-based serial monitor and terminal (PWA).",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit && svelte-check --tsconfig ./tsconfig.json",
+    "clean": "rm -rf dist .vite"
+  },
+  "dependencies": {
+    "@emdzej/stm-serial-core": "workspace:*",
+    "@emdzej/stm-serial-worker": "workspace:*",
+    "@emdzej/stm-settings": "workspace:*",
+    "@emdzej/stm-theme": "workspace:*",
+    "@emdzej/stm-tunnel-protocol": "workspace:*",
+    "@emdzej/stm-ui": "workspace:*",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-web-links": "^0.11.0",
+    "@xterm/addon-webgl": "^0.18.0",
+    "@xterm/xterm": "^5.5.0",
+    "workbox-window": "^7.4.1"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "@tsconfig/svelte": "^5.0.4",
+    "@types/w3c-web-serial": "^1.0.6",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "svelte": "^5.0.0",
+    "svelte-check": "^4.0.0",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.7.3",
+    "vite": "^5.4.0",
+    "vite-plugin-pwa": "^1.3.0"
+  }
+}

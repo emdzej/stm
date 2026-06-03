@@ -1,0 +1,57 @@
+name: Publish stm-tunnel to npm
+
+# Triggered on GitHub release publication. Uses npm trusted publishing
+# (OIDC) — no NPM_TOKEN secret required.
+#
+# One-time setup on npmjs.com:
+#   1. Sign in, go to the @emdzej/stm-tunnel package settings.
+#   2. Add a trusted publisher with:
+#        Publisher: GitHub Actions
+#        Organization / user: <github-org-or-user>
+#        Repository: stm
+#        Workflow filename: publish-cli.yml
+#        Environment: (leave empty unless you use one)
+#   3. First publish of a new package must still be done manually with
+#      `npm publish --access public --provenance`, since trusted publishing
+#      can only attach to an existing package.
+#
+# OIDC requires npm >= 11.5 for fully tokenless publishing; we install
+# the latest npm in the workflow to be sure.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Use latest npm (for OIDC trusted publishing)
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build CLI bundle
+        run: pnpm --filter @emdzej/stm-tunnel build
+
+      - name: Publish
+        run: pnpm --filter @emdzej/stm-tunnel publish --access public --provenance --no-git-checks

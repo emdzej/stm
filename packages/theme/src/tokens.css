@@ -1,0 +1,48 @@
+/*
+ * Semantic color tokens. Dark mode flips via `.dark` on <html>.
+ * Names mirror the bimmerz / ncsx vocabulary so component code can use
+ * the same Tailwind utility names (bg-base, text-foreground, etc.).
+ */
+:root {
+  --theme-bg-base: #f7f7f8;
+  --theme-bg-surface: #ffffff;
+  --theme-bg-elevated: #f1f1f3;
+
+  --theme-text-foreground: #18181b;
+  --theme-text-muted: #52525b;
+  --theme-text-faint: #a1a1aa;
+
+  --theme-border-divider: #e4e4e7;
+  --theme-border-rule: #d4d4d8;
+
+  --theme-color-success: #16a34a;
+  --theme-color-warning: #d97706;
+  --theme-color-danger: #dc2626;
+}
+
+html.dark {
+  --theme-bg-base: #0b0b0e;
+  --theme-bg-surface: #141418;
+  --theme-bg-elevated: #1c1c22;
+
+  --theme-text-foreground: #f4f4f5;
+  --theme-text-muted: #a1a1aa;
+  --theme-text-faint: #71717a;
+
+  --theme-border-divider: #27272a;
+  --theme-border-rule: #3f3f46;
+
+  --theme-color-success: #22c55e;
+  --theme-color-warning: #f59e0b;
+  --theme-color-danger: #ef4444;
+}
+
+html,
+body {
+  background: var(--theme-bg-base);
+  color: var(--theme-text-foreground);
+}
+
+::selection {
+  background: rgba(59, 130, 246, 0.35);
+}

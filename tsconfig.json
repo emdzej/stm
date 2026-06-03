@@ -1,0 +1,13 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/theme" },
+    { "path": "packages/tunnel-protocol" },
+    { "path": "packages/serial-core" },
+    { "path": "packages/serial-worker" },
+    { "path": "packages/protocols-xfer" },
+    { "path": "packages/logging" },
+    { "path": "packages/settings" },
+    { "path": "packages/ui" }
+  ]
+}
