@@ -7,6 +7,10 @@
 
   const title = $derived.by(() => {
     switch (xfer.state.kind) {
+      case "sending-handshake":
+        return "Starting ZMODEM send";
+      case "sending":
+        return "Sending file";
       case "offered":
         return "ZMODEM file offered";
       case "receiving":
@@ -31,7 +35,36 @@
 <Dialog {open} onClose={dismissXfer} label={title} width="w-[28rem]">
   <h2 class="mb-3 font-semibold">{title}</h2>
 
-  {#if xfer.state.kind === "offered"}
+  {#if xfer.state.kind === "sending-handshake"}
+    <p class="mb-2 text-xs text-muted">
+      Sent <code class="font-mono">rz\r</code> to the device. Waiting for it
+      to start ZMODEM receive…
+    </p>
+    <p class="mb-3 text-xs text-faint">
+      If nothing happens, make sure <code class="font-mono">rz</code> is on
+      the remote shell's PATH.
+    </p>
+    <div class="flex justify-end text-xs">
+      <button class={BUTTON_SECONDARY} onclick={dismissXfer}>Cancel</button>
+    </div>
+  {:else if xfer.state.kind === "sending"}
+    <p class="mb-2 text-xs text-muted">
+      Sending <span class="font-mono">{xfer.state.filename}</span>…
+    </p>
+    {#if xfer.state.size > 0}
+      {@const pct = Math.round((xfer.state.sent / xfer.state.size) * 100)}
+      <div class="mb-2 h-2 overflow-hidden rounded border border-divider bg-base">
+        <div class="h-full bg-accent transition-all" style="width: {pct}%"></div>
+      </div>
+      <div class="text-xs font-mono text-faint">
+        {formatBytes(xfer.state.sent)} / {formatBytes(xfer.state.size)} ({pct}%)
+      </div>
+    {:else}
+      <div class="text-xs font-mono text-faint">
+        {formatBytes(xfer.state.sent)} sent
+      </div>
+    {/if}
+  {:else if xfer.state.kind === "offered"}
     <p class="mb-3 text-xs text-muted">
       The remote device is offering a file:
     </p>

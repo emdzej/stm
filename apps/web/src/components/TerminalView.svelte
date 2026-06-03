@@ -2,7 +2,21 @@
   import { BUTTON_SECONDARY } from "@emdzej/stm-ui";
   import { app } from "../lib/state.svelte";
   import { bridge } from "../lib/serial-bridge.svelte";
+  import { initiateSend } from "../lib/zmodem.svelte";
   import Terminal from "./Terminal.svelte";
+  import MacroPicker from "./MacroPicker.svelte";
+
+  function pickFile(): void {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.multiple = true;
+    input.onchange = () => {
+      if (input.files && input.files.length > 0) {
+        initiateSend(input.files);
+      }
+    };
+    input.click();
+  }
 
   /** Control characters and xterm function-key escape sequences. */
   const CTRL = {
@@ -79,15 +93,21 @@
       ({bridge.metrics.rxRate.toFixed(0)} B/s) · tx {bridge.metrics.txBytes.toLocaleString()} B
     </span>
     <span class="flex-1"></span>
-    <button class={BUTTON_SECONDARY} title="ZMODEM send — coming soon" disabled>
+    <button
+      class={BUTTON_SECONDARY}
+      onclick={pickFile}
+      disabled={!bridge.activeConfig}
+      title="Pick file(s) — STM sends `rz` to the remote, then ZMODEM-sends the files"
+    >
       Send file…
     </button>
-    <span class="text-faint" title="Run `sz file` on the device to send a file in. The web app auto-detects the ZMODEM start sequence.">
-      sz ⇒ download
+    <span
+      class="text-faint"
+      title="Run `sz file` on the device to send a file in. The web app auto-detects the ZMODEM start sequence."
+    >
+      or sz ⇒ download
     </span>
-    <button class={BUTTON_SECONDARY} title="Macros — coming soon" disabled>
-      Macros
-    </button>
+    <MacroPicker />
   </div>
 
   <div class="flex-1 overflow-hidden bg-base">

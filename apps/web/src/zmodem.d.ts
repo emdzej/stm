@@ -44,7 +44,11 @@ declare module "zmodem.js/src/zmodem_browser.js" {
     send_files(
       session: ZmodemSession,
       files: File[] | FileList,
-      opts?: { on_offer_response?: (file: File, xfer: unknown) => void },
+      opts?: {
+        on_offer_response?: (file: File, xfer: unknown) => void;
+        on_progress?: (file: File, xfer: unknown, offset: number) => void;
+        on_file_complete?: (file: File, xfer: unknown) => void;
+      },
     ): Promise<unknown>;
   }
 
