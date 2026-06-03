@@ -5,6 +5,36 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Terminal behaviour toggles** in Settings: Backspace key sends DEL or ^H,
+  cursor style, font size (live-applied), local echo, 8-bit clean.
+- **Settings dialog** fleshed out — sections for Monitor, Terminal, Session
+  logs, Tunnel profiles, Macros, and a Settings data row with JSON export,
+  JSON import (file picker), and Reset to defaults.
+- **Named tunnel profiles** — saved `{ name, url, token }` profiles. ConnectDialog
+  exposes a profile picker plus inline "Save as new" when the WebSocket tunnel
+  transport is selected; Settings dialog lists profiles for editing / deletion.
+- **OPFS session logging** — opt-in capture of every connected session's
+  incoming bytes into an OPFS file per session, with metadata (timestamps,
+  byte count, transport, config) in IndexedDB. New `LogsDialog` lists sessions
+  with editable labels, export-as-file, and delete.
+- **ZMODEM receive auto-detect** — the terminal byte stream is now filtered
+  through a ZMODEM Sentry (`zmodem.js`). When the device runs `sz <file>`,
+  the web app pops a transfer dialog, shows progress, and delivers the
+  received file as a browser download. ZMODEM send is queued for a follow-up
+  (needs the `rz`-handshake flow).
+- **Macros** — named byte sequences with `\r` `\n` `\t` `\0` `\\` `\xNN`
+  escapes. Defined in Settings; runnable from a dropdown in both Monitor and
+  Terminal toolbars.
+- Header **version** label now links to the matching GitHub release tag;
+  GitHub icon links to the project repository.
+
+### Removed
+- `AboutDialog` — its only content was the version, which now links directly
+  to the release.
+
 ## [0.1.0] - 2026-06-03
 
 Initial release.
