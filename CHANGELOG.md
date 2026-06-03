@@ -65,7 +65,7 @@ Initial release.
 ### Infrastructure
 - **CI** workflow (`.github/workflows/ci.yml`) — install (frozen lockfile), lint, typecheck, test, build on push / PR / manual trigger.
 - **Pages deploy** workflow (`.github/workflows/deploy-pages.yml`) — manual or on `release: published`; builds the web app and deploys via `actions/deploy-pages@v4`.
-- **npm publish** workflow (`.github/workflows/publish-cli.yml`) — on `release: published`; uses OIDC trusted publishing with `--provenance` (no `NPM_TOKEN` secret needed once the trusted publisher is configured on npmjs.com).
+- **npm publish** workflow (`.github/workflows/publish.yml`) — on `release: published`; uses OIDC trusted publishing with `--provenance` (no `NPM_TOKEN` secret needed once the trusted publisher is configured on npmjs.com).
 
 ### Known issues
 - node-pty's shipped prebuild may fail with `posix_spawnp failed` on macOS Tahoe (Darwin 25+) — the prebuild was compiled against an older SDK. Workaround: drop the prebuilds and rebuild from source.
