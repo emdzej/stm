@@ -151,22 +151,45 @@ Currently persisted: theme choice (system/light/dark), Connect dialog state (tra
 
 ## Status
 
-Working:
-- Monitor mode (ASCII + HEX views, composer, configurable line endings)
-- Terminal mode (xterm.js + special-key toolbar with modifier support)
-- Web Serial + WebSocket tunnel transports
-- Live port reconfigure (change baud, parity, etc. without re-prompting)
-- Theme switch (system / light / dark) with live OS-preference tracking
-- Persisted Connect + Monitor settings
-- PWA-installable
+Working in 0.2.0:
+- Monitor mode — ASCII + virtualised HEX views (hundreds of thousands of
+  rows), ASCII/HEX composer, configurable line endings, pause/clear/save,
+  optional local echo of sent bytes.
+- Terminal mode — xterm.js with WebGL + canvas fallback, special-key
+  toolbar (Break / ^C–^] / Esc / Tab / F1–F12 with Shift/Alt/Ctrl modifiers),
+  Backspace remap (DEL ↔ ^H), local echo, 8-bit clean, fit-to-container
+  or fixed cols × rows geometry, live font / cursor updates.
+- Transports — Web Serial (Chromium) and WebSocket tunnel (everywhere).
+  Live port reconfigure on both; tunnel reconfigure stays on the same
+  WebSocket.
+- ZMODEM — receive auto-detect from incoming `sz <file>`, and send via
+  file picker + `rz`-handshake. Progress dialog with per-file byte counts.
+- Session logging — opt-in OPFS capture per session, IDB metadata, browse
+  / label / export / delete in a dedicated dialog. Live byte-count ticks
+  during recording.
+- Macros — named byte sequences with `\r` `\n` `\t` `\0` `\\` `\xNN` escapes,
+  callable from a dropdown in both Monitor and Terminal toolbars.
+- Persisted settings — theme (system/light/dark with live OS tracking),
+  Connect dialog (transport, tunnel URL/token, baud, parity, …), Monitor
+  prefs, Terminal prefs, tunnel profiles, serial presets, macros, logging
+  enable. JSON import / export. Versioned schema with non-destructive
+  additive merges.
+- PWA-installable with offline service worker. Deploys to a custom domain
+  via `apps/web/public/CNAME`.
+- Tests — vitest specs for the frame codec, settings load/save/merge,
+  byte-format helpers, and macro escapes (44 tests in CI).
 
 Roadmap:
-- X / Y / ZMODEM file transfer in terminal mode
-- OPFS session logging with browse + export
-- Settings dialog (preset library, JSON import/export)
-- Named tunnel profiles
-- Custom macros / AT command snippets
-- Backspace mode toggle (^H vs DEL), local echo, 8-bit-clean
+- XMODEM / YMODEM (only ZMODEM is wired today).
+- Modem-mode niceties: AT response parser, signal-strength formatter.
+- Live theme repaint for an already-mounted xterm (currently only on
+  remount).
+
+## Support
+
+If you find this project useful, consider [buying me a coffee](https://buymeacoffee.com/emdzej) ☕ or [sponsoring on GitHub](https://github.com/sponsors/emdzej) or if it's your thing: via PayPal
+
+[![Donate with PayPal](https://www.paypalobjects.com/en_US/PL/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?business=TDBR3A97PLQRQ&no_recurring=0&item_name=%28emdzej%29&currency_code=PLN)
 
 ## License
 
