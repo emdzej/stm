@@ -1,6 +1,6 @@
 {
   "name": "@emdzej/stm-tunnel",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "WebSocket bridge for the STM web serial monitor — exposes a serial port (or a PTY-hosted command) to a browser.",
   "type": "module",
   "bin": {

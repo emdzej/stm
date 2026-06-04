@@ -7,33 +7,88 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-04
+
 ### Added
-- **Terminal behaviour toggles** in Settings: Backspace key sends DEL or ^H,
-  cursor style, font size (live-applied), local echo, 8-bit clean.
-- **Settings dialog** fleshed out — sections for Monitor, Terminal, Session
-  logs, Tunnel profiles, Macros, and a Settings data row with JSON export,
-  JSON import (file picker), and Reset to defaults.
-- **Named tunnel profiles** — saved `{ name, url, token }` profiles. ConnectDialog
-  exposes a profile picker plus inline "Save as new" when the WebSocket tunnel
-  transport is selected; Settings dialog lists profiles for editing / deletion.
-- **OPFS session logging** — opt-in capture of every connected session's
-  incoming bytes into an OPFS file per session, with metadata (timestamps,
-  byte count, transport, config) in IndexedDB. New `LogsDialog` lists sessions
-  with editable labels, export-as-file, and delete.
-- **ZMODEM receive auto-detect** — the terminal byte stream is now filtered
+
+#### Monitor mode
+- **Virtualised** ASCII and HEX views via a new `VirtualLineList` primitive
+  (in `packages/ui`). The ASCII view is now `lines[]` (split on `\n`)
+  instead of a single rolling string; row caps raised to 8 k (ASCII) and
+  65 k (HEX, ~1 MB of captured bytes). Stick-to-bottom only re-pins when
+  the user is already there, so scrolling back stays sticky.
+- **Local echo** (`settings.monitor.echoLocal`) — outgoing bytes are now
+  piped back through the stream view when the toggle is on.
+
+#### Terminal mode
+- **Behaviour toggles** in Settings: Backspace key emits DEL (0x7F) or
+  ^H (0x08), local echo, 8-bit clean, cursor style, font size — all
+  live-applied to the running xterm via `$effect`.
+- **Fixed geometry** (`settings.terminal.geometry: "fit" | "fixed"`). Fit
+  is the default (matches prior behaviour); Fixed forces `term.resize(cols,
+  rows)` and the wrapper switches to `overflow-auto` so larger grids
+  scroll. Defaults match the original spec (80 × 25).
+- **ZMODEM receive auto-detect** — the terminal byte stream is filtered
   through a ZMODEM Sentry (`zmodem.js`). When the device runs `sz <file>`,
-  the web app pops a transfer dialog, shows progress, and delivers the
-  received file as a browser download. ZMODEM send is queued for a follow-up
-  (needs the `rz`-handshake flow).
-- **Macros** — named byte sequences with `\r` `\n` `\t` `\0` `\\` `\xNN`
-  escapes. Defined in Settings; runnable from a dropdown in both Monitor and
-  Terminal toolbars.
-- Header **version** label now links to the matching GitHub release tag;
-  GitHub icon links to the project repository.
+  a transfer dialog pops with the offer, progress bar, and a download on
+  completion.
+- **ZMODEM send** — file picker → `rz\r` handshake → `Zmodem.Browser.send_files()`
+  with live byte progress in the existing dialog. 10 s timeout if the
+  remote shell has no `rz`.
+
+#### Settings dialog
+- Real content (was a placeholder): sections for Monitor, Terminal,
+  Session logs, Tunnel profiles, Serial presets, and Macros.
+- **JSON export** (download) / **JSON import** (file picker) / **Reset to
+  defaults**.
+
+#### Tunnel profiles
+- Named `{ name, url, token }` profiles, persisted in
+  `settings.tunnelProfiles`. ConnectDialog exposes a profile picker plus
+  inline "Save as new" when the WebSocket tunnel transport is selected.
+- Settings dialog manages the list with rename / remove.
+
+#### Serial presets
+- Saved port configs (`{ name, baud, dataBits, stopBits, parity, flowControl }`),
+  persisted in `settings.serialPresets`.
+- `SerialPresetPicker` dropdown above the `SerialConfigForm` in both
+  Connect and Reconfigure dialogs with inline "Save as preset…".
+- Settings dialog manages the list with rename / remove.
+
+#### Macros
+- Named byte sequences with `\r` `\n` `\t` `\0` `\\` `\xNN` escapes,
+  persisted in `settings.macros`.
+- `MacroPicker` shows as a dropdown in Monitor and Terminal toolbars when
+  any are defined; falls back to a "Macros…" button (opens Settings) when
+  empty.
+
+#### Session logging
+- Opt-in capture of every connected session's incoming bytes into an OPFS
+  file per session, with metadata (timestamps, byte count, transport,
+  config, label) in IndexedDB.
+- `LogsDialog` lists sessions with editable labels, export-as-file, and
+  delete. Refuses to delete the in-progress session.
+- **Live byteCount ticks** during recording — the Settings indicator and
+  the LogsDialog row both update without waiting for stop.
+
+#### Header
+- Version label links to the matching GitHub release tag.
+- GitHub icon links to the project repo.
+- Three-icon theme switch (system / light / dark) tracks the OS preference
+  live in system mode.
+- Cog icon replaces the Settings text button at the right edge.
+
+#### Tests
+- vitest suites land for `packages/tunnel-protocol` (11 tests — frame codec
+  round-trips and negatives), `packages/settings` (7 tests — load / save /
+  merge / import paths, including additive-schema merge), `apps/web/src/lib/format`
+  (18 tests — `decodeForAscii`, `parseHex`, `lineEndingBytes`, `formatHexRow`),
+  and `apps/web/src/lib/macros` (8 tests — escape interpretation). CI's
+  `pnpm test` now exercises 44 specs.
 
 ### Removed
-- `AboutDialog` — its only content was the version, which now links directly
-  to the release.
+- `AboutDialog` — its only content was the version, which now links
+  directly to the release tag.
 
 ## [0.1.0] - 2026-06-03
 
@@ -107,4 +162,6 @@ Initial release.
 - Settings dialog content is currently a placeholder — JSON import/export and a preset library land in a follow-up release.
 - X / Y / ZMODEM file transfer and OPFS session logging are scaffolded but not yet implemented.
 
+[Unreleased]: https://github.com/emdzej/stm/compare/0.2.0...HEAD
+[0.2.0]: https://github.com/emdzej/stm/releases/tag/0.2.0
 [0.1.0]: https://github.com/emdzej/stm/releases/tag/0.1.0
