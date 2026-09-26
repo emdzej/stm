@@ -310,6 +310,7 @@ async function openPty(command: string, cleanEnv: boolean, sink: Sink): Promise<
     throw new Error(
       "node-pty is not available — run `pnpm approve-builds node-pty && pnpm install` " +
         `to enable --exec mode. Underlying error: ${(err as Error).message}`,
+      { cause: err },
     );
   }
   const [cmd, ...args] = splitCommand(command);
@@ -345,15 +346,17 @@ async function openPty(command: string, cleanEnv: boolean, sink: Sink): Promise<
           "`pnpm --filter @emdzej/stm-tunnel rebuild node-pty` to build " +
           "node-pty from source against your current Node binary. Also try a " +
           'simpler command first: `stm-tunnel --exec "echo hello"`.',
+        { cause: err },
       );
     }
     if (/ENOENT|bindings|\.node/i.test(msg)) {
       throw new Error(
         `${detail} node-pty's native binding may be missing — run ` +
           "`pnpm approve-builds node-pty && pnpm install` to build it.",
+        { cause: err },
       );
     }
-    throw new Error(detail);
+    throw new Error(detail, { cause: err });
   }
   const enc = new TextEncoder();
   let exited = false;

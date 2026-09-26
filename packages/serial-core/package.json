@@ -19,6 +19,6 @@
   },
   "devDependencies": {
     "@types/w3c-web-serial": "^1.0.6",
-    "typescript": "^5.7.3"
+    "typescript": "^6.0.3"
   }
 }

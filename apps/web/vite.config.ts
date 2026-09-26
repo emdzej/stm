@@ -43,10 +43,4 @@ export default defineConfig({
   server: {
     port: 5176,
   },
-  build: {
-    commonjsOptions: {
-      include: [/node_modules/, /packages\//],
-      transformMixedEsModules: true,
-    },
-  },
 });

@@ -137,7 +137,7 @@ export function validateSignals(v: unknown): SerialSignalsWire {
   return out;
 }
 
-function prefix(type: FrameTypeValue, body: Uint8Array): Uint8Array {
+function prefix(type: FrameTypeValue, body: Uint8Array): Uint8Array<ArrayBuffer> {
   const out = new Uint8Array(1 + body.length);
   out[0] = type;
   out.set(body, 1);
@@ -148,31 +148,31 @@ function jsonBody(obj: unknown): Uint8Array {
   return enc.encode(JSON.stringify(obj));
 }
 
-export function encodeData(bytes: Uint8Array): Uint8Array {
+export function encodeData(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
   return prefix(FrameType.DATA, bytes);
 }
 
-export function encodeOpen(config: SerialConfigWire): Uint8Array {
+export function encodeOpen(config: SerialConfigWire): Uint8Array<ArrayBuffer> {
   return prefix(FrameType.OPEN, jsonBody(config));
 }
 
-export function encodeClose(): Uint8Array {
+export function encodeClose(): Uint8Array<ArrayBuffer> {
   return Uint8Array.of(FrameType.CLOSE);
 }
 
-export function encodeSignals(signals: SerialSignalsWire): Uint8Array {
+export function encodeSignals(signals: SerialSignalsWire): Uint8Array<ArrayBuffer> {
   return prefix(FrameType.SIGNALS, jsonBody(signals));
 }
 
-export function encodeState(open: boolean, config?: SerialConfigWire): Uint8Array {
+export function encodeState(open: boolean, config?: SerialConfigWire): Uint8Array<ArrayBuffer> {
   return prefix(FrameType.STATE, jsonBody({ open, config }));
 }
 
-export function encodeError(code: string, message: string): Uint8Array {
+export function encodeError(code: string, message: string): Uint8Array<ArrayBuffer> {
   return prefix(FrameType.ERROR, jsonBody({ code, message }));
 }
 
-export function encodePing(): Uint8Array {
+export function encodePing(): Uint8Array<ArrayBuffer> {
   return Uint8Array.of(FrameType.PING);
 }
 
