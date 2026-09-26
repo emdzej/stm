@@ -55,12 +55,14 @@
     term.open(container);
 
     // WebGL renderer is dramatically faster but requires hardware support.
-    // It throws on context-loss / unsupported environments — fall back silently.
+    // It throws in unsupported environments; on a later GPU context loss we
+    // dispose it so xterm falls back to its DOM renderer instead of going blank.
     try {
       const webgl = new WebglAddon();
+      webgl.onContextLoss(() => webgl.dispose());
       term.loadAddon(webgl);
     } catch (err) {
-      console.warn("[STM] WebGL renderer unavailable, using canvas fallback:", err);
+      console.warn("[STM] WebGL renderer unavailable, using DOM fallback:", err);
     }
 
     // Initial geometry — applyGeometry isn't yet defined when we first hit
