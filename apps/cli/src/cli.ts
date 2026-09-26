@@ -1,6 +1,6 @@
 // Shebang for the executable is added by the esbuild bundle banner, not here —
 // keeping it out of the source so `tsx`-driven dev runs don't see a duplicate.
-import { Command, InvalidArgumentError } from "commander";
+import { Command, InvalidArgumentError, Option } from "commander";
 import { readFileSync } from "node:fs";
 import { startTunnel } from "./server.js";
 import {
@@ -40,10 +40,11 @@ program
     'Spawn a command in a PTY instead of opening a serial port (e.g. "bash -i"). Quotes are honoured. Always requires a token.',
   )
   .option("-b, --baud <rate>", "Default baud rate (client can override on OPEN; ignored with --exec)", parseBaud, 115200)
-  .option("-l, --listen <host:port>", "Bind address; use [addr]:port for IPv6", parseListenOpt, {
-    host: "127.0.0.1",
-    port: 8787,
-  })
+  .addOption(
+    new Option("-l, --listen <host:port>", "Bind address; use [addr]:port for IPv6")
+      .argParser(parseListenOpt)
+      .default({ host: "127.0.0.1", port: 8787 }, "127.0.0.1:8787"),
+  )
   .option("--token <token>", "Auth token clients must present. A random one is generated if omitted. Prefer STM_TUNNEL_TOKEN env var (argv is visible in `ps`).")
   .option("--no-auth", "Disable token auth. Only allowed on loopback binds in --port mode.")
   .option(

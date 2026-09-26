@@ -24,12 +24,12 @@
     "test": "vitest run --dir src"
   },
   "dependencies": {
-    "commander": "^12.1.0",
-    "serialport": "^12.0.0",
-    "ws": "^8.18.0"
+    "commander": "^15.0.0",
+    "serialport": "^13.0.0",
+    "ws": "^8.22.0"
   },
   "optionalDependencies": {
-    "node-pty": "^1.0.0"
+    "node-pty": "^1.1.0"
   },
   "devDependencies": {
     "@emdzej/stm-tunnel-protocol": "workspace:*",
