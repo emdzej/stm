@@ -9,6 +9,9 @@ import {
   encodeState,
   encodeError,
   encodePing,
+  clientSubprotocols,
+  tokenFromSubprotocols,
+  SUBPROTOCOL,
   type SerialConfigWire,
 } from "./index.js";
 
@@ -100,5 +103,51 @@ describe("tunnel-protocol", () => {
 
   it("rejects an unknown frame type", () => {
     expect(() => decodeFrame(new Uint8Array([0xff]))).toThrow(/Unknown frame type/);
+  });
+
+  it("OPEN rejects configs that fail validation", () => {
+    const bad = (obj: unknown) => new Uint8Array([FrameType.OPEN, ...new TextEncoder().encode(JSON.stringify(obj))]);
+    expect(() => decodeFrame(bad(null))).toThrow(/object/);
+    expect(() => decodeFrame(bad({ ...CONFIG, baudRate: "115200" }))).toThrow(/baudRate/);
+    expect(() => decodeFrame(bad({ ...CONFIG, baudRate: -1 }))).toThrow(/baudRate/);
+    expect(() => decodeFrame(bad({ ...CONFIG, baudRate: 1.5 }))).toThrow(/baudRate/);
+    expect(() => decodeFrame(bad({ ...CONFIG, dataBits: 9 }))).toThrow(/dataBits/);
+    expect(() => decodeFrame(bad({ ...CONFIG, stopBits: 3 }))).toThrow(/stopBits/);
+    expect(() => decodeFrame(bad({ ...CONFIG, parity: "mark" }))).toThrow(/parity/);
+    expect(() => decodeFrame(bad({ ...CONFIG, flowControl: "xon" }))).toThrow(/flowControl/);
+  });
+
+  it("OPEN strips unknown keys", () => {
+    const withExtra = new Uint8Array([
+      FrameType.OPEN,
+      ...new TextEncoder().encode(JSON.stringify({ ...CONFIG, path: "/dev/evil" })),
+    ]);
+    const frame = decodeFrame(withExtra);
+    if (frame.type === FrameType.OPEN) expect(frame.config).toEqual(CONFIG);
+  });
+
+  it("SIGNALS rejects non-boolean values and drops unknown keys", () => {
+    const raw = (obj: unknown) => new Uint8Array([FrameType.SIGNALS, ...new TextEncoder().encode(JSON.stringify(obj))]);
+    expect(() => decodeFrame(raw({ dtr: "yes" }))).toThrow(/dtr/);
+    expect(() => decodeFrame(raw([true]))).toThrow(/object/);
+    const frame = decodeFrame(raw({ dtr: true, bogus: 1 }));
+    if (frame.type === FrameType.SIGNALS) expect(frame.signals).toEqual({ dtr: true });
+  });
+
+  it("rejects malformed JSON bodies", () => {
+    expect(() => decodeFrame(new Uint8Array([FrameType.ERROR, 0x7b]))).toThrow();
+    expect(() => decodeFrame(new Uint8Array([FrameType.STATE, ...new TextEncoder().encode("{}")]))).toThrow(/STATE/);
+  });
+
+  it("token round-trips through the subprotocol list", () => {
+    for (const token of ["s3cret", "with spaces & ünïcödé / + =", "a"]) {
+      const protos = clientSubprotocols(token);
+      expect(protos[0]).toBe(SUBPROTOCOL);
+      // RFC 6455 subprotocol must be an HTTP token: no separators / spaces.
+      expect(protos[1]).toMatch(/^[A-Za-z0-9._-]+$/);
+      expect(tokenFromSubprotocols(protos)).toBe(token);
+    }
+    expect(clientSubprotocols()).toEqual([SUBPROTOCOL]);
+    expect(tokenFromSubprotocols([SUBPROTOCOL])).toBeUndefined();
   });
 });

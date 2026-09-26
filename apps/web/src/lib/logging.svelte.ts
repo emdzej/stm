@@ -24,7 +24,6 @@ class ReactiveLogging {
       // reactive mirror that the UI binds to.
       this.current = { ...meta };
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error("[STM] logging start failed:", err);
     }
   }
@@ -34,7 +33,6 @@ class ReactiveLogging {
     try {
       await this.svc.stop();
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error("[STM] logging stop failed:", err);
     }
     this.current = null;

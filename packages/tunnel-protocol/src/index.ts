@@ -46,6 +46,97 @@ export type DecodedFrame =
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 
+/** Maximum accepted baud rate. Generous upper bound (most USB-UART bridges
+ * top out at 12 Mbaud); exists to reject garbage, not to police hardware. */
+export const MAX_BAUD_RATE = 20_000_000;
+
+/** WebSocket subprotocol the tunnel speaks. The server always selects it. */
+export const SUBPROTOCOL = "stm.v1";
+/** Prefix for the subprotocol entry carrying the auth token. Browsers can't
+ * set an `Authorization` header on a WebSocket, and a `?token=` query string
+ * leaks into logs / history — `Sec-WebSocket-Protocol` is the one header a
+ * browser lets us populate. The token is base64url-encoded so any string
+ * fits the RFC 6455 token grammar. */
+export const TOKEN_SUBPROTOCOL_PREFIX = "stm.token.";
+
+function base64UrlEncode(s: string): string {
+  let bin = "";
+  for (const b of enc.encode(s)) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function base64UrlDecode(s: string): string {
+  const b64 = s.replace(/-/g, "+").replace(/_/g, "/");
+  const bin = atob(b64 + "=".repeat((4 - (b64.length % 4)) % 4));
+  return dec.decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+}
+
+/** Subprotocol list a client should offer: always `stm.v1`, plus the token
+ * entry when a token is configured. */
+export function clientSubprotocols(token?: string): string[] {
+  return token ? [SUBPROTOCOL, TOKEN_SUBPROTOCOL_PREFIX + base64UrlEncode(token)] : [SUBPROTOCOL];
+}
+
+/** Extract the token from an offered subprotocol list, if present. */
+export function tokenFromSubprotocols(protocols: Iterable<string>): string | undefined {
+  for (const p of protocols) {
+    if (!p.startsWith(TOKEN_SUBPROTOCOL_PREFIX)) continue;
+    try {
+      return base64UrlDecode(p.slice(TOKEN_SUBPROTOCOL_PREFIX.length));
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
+function isObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function parseJson(body: Uint8Array): unknown {
+  return JSON.parse(dec.decode(body));
+}
+
+/** Validate an untrusted serial config. JSON from the wire is otherwise a
+ * bare cast — this is what stands between a client and `new SerialPort()`. */
+export function validateSerialConfig(v: unknown): SerialConfigWire {
+  if (!isObject(v)) throw new Error("config must be an object");
+  const { baudRate, dataBits, stopBits, parity, flowControl } = v;
+  if (
+    typeof baudRate !== "number" ||
+    !Number.isInteger(baudRate) ||
+    baudRate < 1 ||
+    baudRate > MAX_BAUD_RATE
+  ) {
+    throw new Error(`invalid baudRate: ${String(baudRate)}`);
+  }
+  if (dataBits !== 7 && dataBits !== 8) throw new Error(`invalid dataBits: ${String(dataBits)}`);
+  if (stopBits !== 1 && stopBits !== 2) throw new Error(`invalid stopBits: ${String(stopBits)}`);
+  if (parity !== "none" && parity !== "even" && parity !== "odd") {
+    throw new Error(`invalid parity: ${String(parity)}`);
+  }
+  if (flowControl !== "none" && flowControl !== "hardware") {
+    throw new Error(`invalid flowControl: ${String(flowControl)}`);
+  }
+  return { baudRate, dataBits, stopBits, parity, flowControl };
+}
+
+const SIGNAL_KEYS = ["dtr", "rts", "brk", "cts", "dsr", "dcd", "ri"] as const;
+
+/** Keep only known boolean signal keys; reject non-objects. */
+export function validateSignals(v: unknown): SerialSignalsWire {
+  if (!isObject(v)) throw new Error("signals must be an object");
+  const out: SerialSignalsWire = {};
+  for (const k of SIGNAL_KEYS) {
+    const val = v[k];
+    if (val === undefined) continue;
+    if (typeof val !== "boolean") throw new Error(`invalid signal ${k}: ${String(val)}`);
+    out[k] = val;
+  }
+  return out;
+}
+
 function prefix(type: FrameTypeValue, body: Uint8Array): Uint8Array {
   const out = new Uint8Array(1 + body.length);
   out[0] = type;
@@ -93,20 +184,27 @@ export function decodeFrame(buf: Uint8Array): DecodedFrame {
     case FrameType.DATA:
       return { type, payload: body };
     case FrameType.OPEN:
-      return { type, config: JSON.parse(dec.decode(body)) as SerialConfigWire };
+      return { type, config: validateSerialConfig(parseJson(body)) };
     case FrameType.CLOSE:
       return { type };
     case FrameType.SIGNALS:
-      return { type, signals: JSON.parse(dec.decode(body)) as SerialSignalsWire };
+      return { type, signals: validateSignals(parseJson(body)) };
     case FrameType.STATE: {
-      const parsed = JSON.parse(dec.decode(body)) as {
-        open: boolean;
-        config?: SerialConfigWire;
+      const parsed = parseJson(body);
+      if (!isObject(parsed) || typeof parsed.open !== "boolean") {
+        throw new Error("invalid STATE frame");
+      }
+      return {
+        type,
+        open: parsed.open,
+        config: parsed.config === undefined ? undefined : validateSerialConfig(parsed.config),
       };
-      return { type, open: parsed.open, config: parsed.config };
     }
     case FrameType.ERROR: {
-      const parsed = JSON.parse(dec.decode(body)) as { code: string; message: string };
+      const parsed = parseJson(body);
+      if (!isObject(parsed) || typeof parsed.code !== "string" || typeof parsed.message !== "string") {
+        throw new Error("invalid ERROR frame");
+      }
       return { type, code: parsed.code, message: parsed.message };
     }
     case FrameType.PING:

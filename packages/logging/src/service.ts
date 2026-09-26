@@ -106,7 +106,6 @@ export class LoggingService {
       await this.writable?.close();
     } catch (err) {
       // Persist what we have anyway; the file may still be partially usable.
-      // eslint-disable-next-line no-console
       console.error("[STM] log flush failed:", err);
     }
     this.writable = null;

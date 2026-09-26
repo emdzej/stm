@@ -60,7 +60,6 @@
       const webgl = new WebglAddon();
       term.loadAddon(webgl);
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.warn("[STM] WebGL renderer unavailable, using canvas fallback:", err);
     }
 
@@ -127,7 +126,6 @@
       },
       send: (bytes) => {
         void bridge.write(bytes).catch((err) => {
-          // eslint-disable-next-line no-console
           console.error("[STM] zmodem send failed:", err);
         });
       },
@@ -147,7 +145,6 @@
         term.write(payload);
       }
       void bridge.write(encoder.encode(payload)).catch((err) => {
-        // eslint-disable-next-line no-console
         console.error("[STM] write failed:", err);
       });
     });

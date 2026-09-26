@@ -6,6 +6,7 @@
   import { DEFAULTS, exportJson, importJson, type Settings } from "@emdzej/stm-settings";
 
   let importError = $state<string | null>(null);
+  let exportSecrets = $state(false);
 
   function openLogs(): void {
     app.showSettings = false;
@@ -28,12 +29,14 @@
     Object.assign(settings.terminal, s.terminal);
     Object.assign(settings.connect, s.connect);
     Object.assign(settings.connect.config, s.connect.config);
+    Object.assign(settings.logging, s.logging);
     settings.serialPresets = [...s.serialPresets];
     settings.tunnelProfiles = [...s.tunnelProfiles];
+    settings.macros = [...s.macros];
   }
 
   function doExport(): void {
-    const blob = new Blob([exportJson(settings)], { type: "application/json" });
+    const blob = new Blob([exportJson(settings, { includeSecrets: exportSecrets })], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -363,6 +366,10 @@
     <div class="flex flex-wrap items-center gap-2 text-xs">
       <button class={BUTTON_SECONDARY} onclick={doExport}>Export JSON</button>
       <button class={BUTTON_SECONDARY} onclick={doImport}>Import JSON…</button>
+      <label class="flex items-center gap-1 text-faint" title="Tunnel tokens are omitted from exports unless this is checked">
+        <input type="checkbox" bind:checked={exportSecrets} />
+        Include tokens
+      </label>
       <span class="flex-1"></span>
       <button
         class="rounded border border-warning bg-surface px-2 py-0.5 text-warning transition hover:bg-warning/10"

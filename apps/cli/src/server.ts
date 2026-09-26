@@ -1,15 +1,17 @@
-import { createServer as createHttpServer } from "node:http";
+import { createServer as createHttpServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { createServer as createHttpsServer } from "node:https";
 import { SerialPort } from "serialport";
-import { WebSocketServer, type WebSocket } from "ws";
+import { WebSocketServer, WebSocket, type RawData } from "ws";
 import {
   FrameType,
+  SUBPROTOCOL,
   decodeFrame,
   encodeData,
   encodeError,
   encodeState,
   type SerialConfigWire,
 } from "@emdzej/stm-tunnel-protocol";
+import { authorize, buildChildEnv, splitCommand, type AuthPolicy } from "./options.js";
 
 export interface TunnelOptions {
   serialPath?: string;
@@ -17,59 +19,174 @@ export interface TunnelOptions {
   defaultBaud: number;
   host: string;
   port: number;
-  token?: string;
-  allowedOrigin?: string;
+  auth: AuthPolicy;
   tls?: { cert: Buffer; key: Buffer };
+  cleanEnv: boolean;
   verbose: boolean;
 }
+
+/** Largest inbound WebSocket message. Client frames are keystrokes, pasted
+ * text or ZMODEM blocks (≤ 8 KiB); 1 MiB is plenty and caps memory per frame
+ * (ws defaults to 100 MiB). */
+const MAX_PAYLOAD = 1024 * 1024;
+/** Pause the device when this many bytes are queued towards the client… */
+const HIGH_WATER = 1024 * 1024;
+/** …and resume once the queue drains below this. */
+const LOW_WATER = 256 * 1024;
+/** Ping interval; a client that misses one full interval is terminated so a
+ * half-open connection can't hold the single client slot forever. */
+const HEARTBEAT_MS = 30_000;
 
 /** Internal abstraction over either a SerialPort or a PTY-hosted process.
  * Both look the same to the rest of the server. */
 interface Device {
   write(buf: Buffer): void;
   setSignals?(signals: { dtr?: boolean; rts?: boolean; brk?: boolean }): void;
+  pause(): void;
+  resume(): void;
   close(): Promise<void>;
 }
 
+/** Sink the device pushes into. Handles backpressure and dead sockets. */
+interface Sink {
+  data(bytes: Uint8Array): void;
+  error(code: string, message: string): void;
+  /** The device ended on its own (e.g. PTY process exited). */
+  ended(): void;
+}
+
+function send(ws: WebSocket, frame: Uint8Array, cb?: (err?: Error) => void): void {
+  if (ws.readyState !== WebSocket.OPEN) return;
+  ws.send(frame, cb);
+}
+
 export async function startTunnel(opts: TunnelOptions): Promise<void> {
+  const onRequest = (_req: IncomingMessage, res: ServerResponse) => {
+    res.writeHead(426, { "Content-Type": "text/plain", Upgrade: "websocket" });
+    res.end("stm-tunnel: WebSocket endpoint\n");
+  };
   const httpServer = opts.tls
-    ? createHttpsServer({ cert: opts.tls.cert, key: opts.tls.key })
-    : createHttpServer();
+    ? createHttpsServer({ cert: opts.tls.cert, key: opts.tls.key }, onRequest)
+    : createHttpServer(onRequest);
 
-  const wss = new WebSocketServer({ noServer: true });
+  const wss = new WebSocketServer({
+    noServer: true,
+    maxPayload: MAX_PAYLOAD,
+    // Always select stm.v1 when offered; the token entry is never echoed.
+    handleProtocols: (protocols) => (protocols.has(SUBPROTOCOL) ? SUBPROTOCOL : false),
+  });
 
+  let warnedQueryToken = false;
   httpServer.on("upgrade", (req, socket, head) => {
-    if (!authorize(req, opts)) {
-      socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+    const result = authorize(req, opts.auth);
+    if (!result.ok) {
+      console.warn(`[tunnel] rejected ${req.socket.remoteAddress}: ${result.reason}`);
+      const status = result.status === 401 ? "401 Unauthorized" : "403 Forbidden";
+      socket.write(`HTTP/1.1 ${status}\r\nConnection: close\r\n\r\n`);
       socket.destroy();
       return;
+    }
+    if (result.via === "query" && !warnedQueryToken) {
+      warnedQueryToken = true;
+      console.warn(
+        "[tunnel] client sent the token in the URL query (legacy); it may end up in logs. Update the web app.",
+      );
     }
     wss.handleUpgrade(req, socket, head, (ws) => wss.emit("connection", ws, req));
   });
 
   let active: WebSocket | null = null;
 
-  wss.on("connection", (ws) => {
+  wss.on("connection", (ws: WebSocket) => {
     if (active) {
-      ws.send(encodeError("BUSY", "Another client is already connected"));
+      send(ws, encodeError("BUSY", "Another client is already connected"));
       ws.close();
       return;
     }
     active = ws;
     if (opts.verbose) console.log("[tunnel] client connected");
 
-    let device: Device | null = null;
+    let alive = true;
+    ws.on("pong", () => {
+      alive = true;
+    });
+    const heartbeat = setInterval(() => {
+      if (!alive) {
+        if (opts.verbose) console.log("[tunnel] client missed heartbeat; terminating");
+        ws.terminate();
+        return;
+      }
+      alive = false;
+      ws.ping();
+    }, HEARTBEAT_MS);
 
-    ws.on("message", async (data) => {
-      const buf =
-        data instanceof Buffer
+    let device: Device | null = null;
+    let paused = false;
+    /** Bumped on every open/close so callbacks from a device that has since
+     * been closed (e.g. a killed PTY's onExit) can't clobber the current one. */
+    let generation = 0;
+
+    function makeSink(gen: number): Sink {
+      const current = () => gen === generation;
+      return {
+        data(bytes) {
+          if (!current()) return;
+          send(ws, encodeData(bytes), () => {
+            if (current() && paused && ws.bufferedAmount < LOW_WATER) {
+              paused = false;
+              device?.resume();
+            }
+          });
+          if (!paused && ws.bufferedAmount > HIGH_WATER) {
+            paused = true;
+            device?.pause();
+          }
+        },
+        error(code, message) {
+          if (current()) send(ws, encodeError(code, message));
+        },
+        ended() {
+          if (!current()) return;
+          generation++;
+          device = null;
+          paused = false;
+          send(ws, encodeState(false));
+        },
+      };
+    }
+
+    // Frames are handled strictly in order: reconfigure sends CLOSE+OPEN
+    // back-to-back and those must not interleave.
+    let queue: Promise<void> = Promise.resolve();
+    ws.on("message", (data: RawData) => {
+      queue = queue
+        .then(() => handleMessage(data))
+        .catch((err: unknown) => console.error("[tunnel] message handler failed:", err));
+    });
+
+    ws.on("close", () => {
+      if (opts.verbose) console.log("[tunnel] client disconnected");
+      clearInterval(heartbeat);
+      queue = queue.then(() => closeDevice(false)).finally(() => {
+        if (active === ws) active = null;
+      });
+    });
+
+    ws.on("error", (err) => {
+      console.error("[tunnel] websocket error:", err.message);
+    });
+
+    async function handleMessage(data: RawData): Promise<void> {
+      const buf = Array.isArray(data)
+        ? Buffer.concat(data)
+        : data instanceof ArrayBuffer
           ? new Uint8Array(data)
-          : new Uint8Array(data as ArrayBuffer);
+          : data;
       let frame;
       try {
         frame = decodeFrame(buf);
       } catch (err) {
-        ws.send(encodeError("BAD_FRAME", (err as Error).message));
+        send(ws, encodeError("BAD_FRAME", (err as Error).message));
         return;
       }
       switch (frame.type) {
@@ -86,82 +203,94 @@ export async function startTunnel(opts: TunnelOptions): Promise<void> {
           device?.setSignals?.(frame.signals);
           break;
       }
-    });
-
-    ws.on("close", async () => {
-      if (opts.verbose) console.log("[tunnel] client disconnected");
-      await closeDevice();
-      active = null;
-    });
+    }
 
     async function openDevice(config: SerialConfigWire): Promise<void> {
+      // A second OPEN without CLOSE used to leak the first device (extra
+      // PTY process / locked port). Close it first.
+      await closeDevice(false);
+      if (ws.readyState !== WebSocket.OPEN) return;
+      const sink = makeSink(++generation);
       try {
         device = opts.execCommand
-          ? await openPty(opts.execCommand, ws)
-          : await openSerial(opts.serialPath!, config, ws);
-        ws.send(encodeState(true, config));
+          ? await openPty(opts.execCommand, opts.cleanEnv, sink)
+          : await openSerial(opts.serialPath!, config, sink);
+        send(ws, encodeState(true, config));
         if (opts.verbose) {
           if (opts.execCommand) {
             console.log(`[tunnel] pty opened: ${opts.execCommand}`);
           } else {
-            console.log(
-              `[tunnel] serial opened ${opts.serialPath} @ ${config.baudRate}`,
-            );
+            console.log(`[tunnel] serial opened ${opts.serialPath} @ ${config.baudRate}`);
           }
         }
       } catch (err) {
-        ws.send(encodeError("OPEN_FAILED", (err as Error).message));
+        send(ws, encodeError("OPEN_FAILED", (err as Error).message));
         device = null;
       }
+      // Client went away mid-open: don't leave the device dangling.
+      if (ws.readyState !== WebSocket.OPEN) await closeDevice(false);
     }
 
-    async function closeDevice(): Promise<void> {
+    async function closeDevice(notify = true): Promise<void> {
       if (!device) return;
-      await device.close().catch(() => {});
+      const d = device;
       device = null;
-      ws.send(encodeState(false));
+      paused = false;
+      generation++;
+      await d.close().catch(() => {});
+      if (notify) send(ws, encodeState(false));
     }
   });
 
-  httpServer.listen(opts.port, opts.host, () => {
-    const scheme = opts.tls ? "wss" : "ws";
-    console.log(`[tunnel] listening on ${scheme}://${opts.host}:${opts.port}`);
-    if (opts.execCommand) {
-      console.log(`[tunnel] mode: --exec ${opts.execCommand} (PTY)`);
-    } else {
-      console.log(
-        `[tunnel] mode: serial ${opts.serialPath} (default baud ${opts.defaultBaud})`,
-      );
-    }
-    if (opts.token) console.log("[tunnel] token authentication enabled");
+  await new Promise<void>((resolve, reject) => {
+    httpServer.once("error", reject);
+    httpServer.listen(opts.port, opts.host, () => {
+      httpServer.off("error", reject);
+      resolve();
+    });
   });
+
+  const scheme = opts.tls ? "wss" : "ws";
+  const hostForUrl = opts.host.includes(":") ? `[${opts.host}]` : opts.host;
+  console.log(`[tunnel] listening on ${scheme}://${hostForUrl}:${opts.port}`);
+  if (opts.execCommand) {
+    console.log(`[tunnel] mode: --exec ${opts.execCommand} (PTY${opts.cleanEnv ? ", clean env" : ""})`);
+  } else {
+    console.log(`[tunnel] mode: serial ${opts.serialPath} (default baud ${opts.defaultBaud})`);
+  }
+  console.log(
+    `[tunnel] allowed origins: ${opts.auth.allowedOrigins.join(", ")} (plus clients sending no Origin)`,
+  );
+  if (!opts.auth.token) console.warn("[tunnel] WARNING: authentication disabled (--no-auth)");
 }
 
-async function openSerial(
-  path: string,
-  config: SerialConfigWire,
-  ws: WebSocket,
-): Promise<Device> {
+async function openSerial(path: string, config: SerialConfigWire, sink: Sink): Promise<Device> {
   const port = new SerialPort({
     path,
     baudRate: config.baudRate,
     dataBits: config.dataBits,
     stopBits: config.stopBits,
     parity: config.parity,
-  });
-  port.on("data", (chunk: Buffer) => {
-    ws.send(encodeData(new Uint8Array(chunk)));
-  });
-  port.on("error", (err) => {
-    ws.send(encodeError("SERIAL_ERR", err.message));
+    rtscts: config.flowControl === "hardware",
+    autoOpen: false,
   });
   await new Promise<void>((resolve, reject) => {
-    port.once("open", resolve);
-    port.once("error", reject);
+    port.open((err) => (err ? reject(err) : resolve()));
+  });
+  port.on("data", (chunk: Buffer) => sink.data(new Uint8Array(chunk)));
+  port.on("error", (err) => sink.error("SERIAL_ERR", err.message));
+  port.on("close", (err?: { disconnected?: boolean }) => {
+    // Unplugged device: tell the client instead of silently going quiet.
+    if (err?.disconnected) {
+      sink.error("SERIAL_ERR", "Serial device disconnected");
+      sink.ended();
+    }
   });
   return {
     write: (buf) => port.write(buf),
     setSignals: (s) => port.set({ dtr: s.dtr, rts: s.rts, brk: s.brk }),
+    pause: () => port.pause(),
+    resume: () => port.resume(),
     close: () =>
       new Promise<void>((resolve) => {
         if (!port.isOpen) return resolve();
@@ -170,7 +299,7 @@ async function openSerial(
   };
 }
 
-async function openPty(command: string, ws: WebSocket): Promise<Device> {
+async function openPty(command: string, cleanEnv: boolean, sink: Sink): Promise<Device> {
   // Dynamic import keeps node-pty out of the load path for users who only
   // ever use --port. The postinstall on node-pty is a native build, which
   // pnpm may decline by default; the README documents how to allow it.
@@ -183,18 +312,10 @@ async function openPty(command: string, ws: WebSocket): Promise<Device> {
         `to enable --exec mode. Underlying error: ${(err as Error).message}`,
     );
   }
-  const parts = command.trim().split(/\s+/);
-  const [cmd, ...args] = parts;
+  const [cmd, ...args] = splitCommand(command);
   if (!cmd) throw new Error("--exec command is empty");
 
-  // node-pty crashes on env keys with `undefined` values — process.env *spec*
-  // says all values are strings, but TypeScript's typing is permissive, and a
-  // few platform tools (Node debugger inspector, some shells) actually
-  // surface undefined keys here. Filter to be safe.
-  const cleanEnv: Record<string, string> = {};
-  for (const [k, v] of Object.entries(process.env)) {
-    if (typeof v === "string") cleanEnv[k] = v;
-  }
+  const env = buildChildEnv(process.env, cleanEnv);
   const cwd = process.env.HOME && process.env.HOME.length > 0 ? process.env.HOME : process.cwd();
 
   let proc;
@@ -204,18 +325,14 @@ async function openPty(command: string, ws: WebSocket): Promise<Device> {
       rows: 24,
       name: "xterm-256color",
       cwd,
-      env: cleanEnv,
+      env,
     });
   } catch (err) {
     // Dump the full error to the server log so diagnostics aren't lost in
     // the WebSocket round-trip.
-    // eslint-disable-next-line no-console
     console.error("[tunnel] node-pty.spawn failed:", err);
-    // eslint-disable-next-line no-console
     console.error("[tunnel]   command:", cmd, args);
-    // eslint-disable-next-line no-console
     console.error("[tunnel]   cwd:", cwd);
-    // eslint-disable-next-line no-console
     console.error("[tunnel]   node:", process.version, "arch:", process.arch, "platform:", process.platform);
 
     const msg = (err as Error).message;
@@ -239,22 +356,21 @@ async function openPty(command: string, ws: WebSocket): Promise<Device> {
     throw new Error(detail);
   }
   const enc = new TextEncoder();
-  proc.onData((data) => {
-    ws.send(encodeData(enc.encode(data)));
-  });
+  let exited = false;
+  proc.onData((data) => sink.data(enc.encode(data)));
   proc.onExit(({ exitCode, signal }) => {
-    ws.send(
-      encodeError(
-        "EXEC_EXIT",
-        `Process exited (code=${exitCode}${signal ? `, signal=${signal}` : ""})`,
-      ),
-    );
+    exited = true;
+    sink.error("EXEC_EXIT", `Process exited (code=${exitCode}${signal ? `, signal=${signal}` : ""})`);
+    sink.ended();
   });
   return {
     write: (buf) => proc.write(buf.toString("utf8")),
     // BRK doesn't translate cleanly to a PTY signal; ignore.
     setSignals: () => {},
+    pause: () => proc.pause(),
+    resume: () => proc.resume(),
     close: async () => {
+      if (exited) return;
       try {
         proc.kill();
       } catch {
@@ -262,26 +378,4 @@ async function openPty(command: string, ws: WebSocket): Promise<Device> {
       }
     },
   };
-}
-
-function authorize(
-  req: { headers: Record<string, string | string[] | undefined>; url?: string },
-  opts: TunnelOptions,
-): boolean {
-  if (opts.allowedOrigin) {
-    const origin = req.headers.origin;
-    const originStr = Array.isArray(origin) ? origin[0] : origin;
-    if (originStr !== opts.allowedOrigin) return false;
-  }
-  if (!opts.token) return true;
-
-  const header = req.headers.authorization;
-  const headerStr = Array.isArray(header) ? header[0] : header;
-  if (headerStr === `Bearer ${opts.token}`) return true;
-
-  if (req.url) {
-    const url = new URL(req.url, "http://localhost");
-    if (url.searchParams.get("token") === opts.token) return true;
-  }
-  return false;
 }

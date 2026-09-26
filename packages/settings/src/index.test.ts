@@ -86,7 +86,7 @@ describe("settings", () => {
       tunnelProfiles: [{ id: "x", name: "Home", url: "ws://x:1", token: "t" }],
       macros: [{ id: "m1", name: "AT", payload: "AT\\r" }],
     };
-    const json = exportJson(custom);
+    const json = exportJson(custom, { includeSecrets: true });
     const restored = importJson(json);
     expect(restored.theme).toBe("light");
     expect(restored.tunnelProfiles).toEqual(custom.tunnelProfiles);
@@ -97,5 +97,44 @@ describe("settings", () => {
     expect(() => importJson(JSON.stringify({ schemaVersion: 999 }))).toThrow(
       /Incompatible settings version/,
     );
+  });
+
+  it("exportJson redacts tunnel tokens by default", () => {
+    const custom: Settings = {
+      ...DEFAULTS,
+      connect: { ...DEFAULTS.connect, tunnelToken: "live-secret" },
+      tunnelProfiles: [{ id: "x", name: "Home", url: "ws://x:1", token: "profile-secret" }],
+    };
+    const json = exportJson(custom);
+    expect(json).not.toContain("live-secret");
+    expect(json).not.toContain("profile-secret");
+    expect(importJson(json).tunnelProfiles).toEqual([{ id: "x", name: "Home", url: "ws://x:1" }]);
+  });
+
+  it("importJson drops wrong-typed values and malformed list entries", () => {
+    const restored = importJson(
+      JSON.stringify({
+        schemaVersion: SCHEMA_VERSION,
+        theme: 42,
+        terminal: { cols: "80; rm -rf /", fontSize: 20, extra: "x" },
+        connect: { tunnelUrl: { evil: true }, config: { baudRate: 9600, parity: 1 } },
+        macros: [{ id: "a", name: "ok", payload: "x" }, { id: 1 }, null, "str"],
+        tunnelProfiles: "not-a-list",
+      }),
+    );
+    expect(restored.theme).toBe(DEFAULTS.theme);
+    expect(restored.terminal.cols).toBe(DEFAULTS.terminal.cols);
+    expect(restored.terminal.fontSize).toBe(20);
+    expect(restored.terminal).not.toHaveProperty("extra");
+    expect(restored.connect.tunnelUrl).toBe(DEFAULTS.connect.tunnelUrl);
+    expect(restored.connect.config.baudRate).toBe(9600);
+    expect(restored.connect.config.parity).toBe(DEFAULTS.connect.config.parity);
+    expect(restored.macros).toEqual([{ id: "a", name: "ok", payload: "x" }]);
+    expect(restored.tunnelProfiles).toEqual(DEFAULTS.tunnelProfiles);
+  });
+
+  it("importJson rejects non-object JSON", () => {
+    expect(() => importJson("[]")).toThrow(/object/);
+    expect(() => importJson("null")).toThrow(/object/);
   });
 });

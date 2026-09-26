@@ -68,15 +68,28 @@ Loopback only, default:
 pnpm tunnel -- --port /dev/ttyUSB0 --baud 115200
 ```
 
-Remote access — pick a non-loopback bind and require a token:
+The tunnel always requires a token. If you don't pass one it generates a
+random token and prints it on startup; paste that into the Connect dialog.
+To keep the same token across restarts, set `STM_TUNNEL_TOKEN` (better than
+`--token`, because command-line arguments show up in `ps`).
+
+Browser connections are only accepted from allow-listed origins: by default
+`https://stm.emdzej.pl` plus `localhost` / `127.0.0.1` on any port. Browsers
+don't apply CORS to WebSockets, so without this check any page you had open
+could drive the tunnel. If you self-host the web app, add your origin with
+`--allowed-origin` (repeatable). `--no-auth` turns the token off, but only for
+loopback binds in `--port` mode.
+
+Remote access — pick a non-loopback bind and lock the origin down:
 
 ```
-pnpm tunnel -- \
+STM_TUNNEL_TOKEN=<secret> pnpm tunnel -- \
   --port /dev/ttyUSB0 \
   --listen 0.0.0.0:8787 \
-  --token <secret> \
   --allowed-origin https://stm.example.com
 ```
+
+IPv6: `--listen [::1]:8787`.
 
 `wss://` (required when the web app is served over HTTPS — mixed-content blocks plain `ws://`):
 
@@ -84,7 +97,6 @@ pnpm tunnel -- \
 pnpm tunnel -- \
   --port /dev/ttyUSB0 \
   --listen 0.0.0.0:8787 \
-  --token <secret> \
   --tls-cert cert.pem \
   --tls-key key.pem
 ```
@@ -103,10 +115,18 @@ pnpm tunnel -- --exec "bash -i"
 
 In the web app: **Connect** → **WebSocket tunnel** → `ws://127.0.0.1:8787` → switch to **Terminal**. Good things to try: `vim`, `htop`, `less`, `mc`, `tput colors`, `clear && ls --color=always`.
 
-`--exec` accepts any command string:
+`--exec` takes a command line. Single quotes, double quotes and backslash
+escapes are handled, but it is not a shell: to use `;`, pipes or `$VARS`, wrap
+the command in `sh -c`:
 - `--exec "vim /etc/hosts"` — straight into vim
 - `--exec "top -d 1"` — animated screen updates
-- `--exec "ls --color=always -la /usr; bash -i"` — coloured `ls` then a shell
+- `--exec "sh -c 'ls --color=always -la /usr; bash -i'"` — coloured `ls` then a shell
+
+> **Security:** `--exec` gives whoever connects a shell running as your
+> user. It always requires a token (`--no-auth` is refused). The child
+> inherits your environment, cloud credentials included; pass `--clean-env`
+> to hand it only `PATH`, `HOME`, `USER`, `SHELL`, the locale variables and
+> `TERM`.
 
 `--exec` uses `node-pty`, listed as an **optional** dependency. If its native build was skipped during install, allow it and reinstall:
 

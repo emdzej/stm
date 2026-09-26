@@ -84,7 +84,6 @@ class SerialBridge {
       try {
         await this.transport.close();
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.error("[STM] transport close failed:", err);
       }
       this.transport = null;
@@ -133,7 +132,6 @@ class SerialBridge {
       this.onWorkerMessage(ev.data),
     );
     worker.addEventListener("error", (ev) => {
-      // eslint-disable-next-line no-console
       console.error("[STM] worker error:", ev.message);
     });
     const readable = transport.readable;
@@ -151,7 +149,6 @@ class SerialBridge {
         this.metrics.rxRate = msg.rxRate;
         break;
       case "error":
-        // eslint-disable-next-line no-console
         console.error("[STM] worker:", msg.message);
         break;
       case "detached":

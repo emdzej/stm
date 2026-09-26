@@ -6,6 +6,7 @@ import {
   encodeClose,
   encodeSignals,
   encodePing,
+  clientSubprotocols,
 } from "@emdzej/stm-tunnel-protocol";
 import type {
   SerialConfig,
@@ -47,9 +48,9 @@ export class WebSocketTransport implements SerialTransport {
     this.setState({ kind: "opening" });
     this.resetStream();
     this.pendingConfig = config;
-    const url = new URL(this.opts.url);
-    if (this.opts.token) url.searchParams.set("token", this.opts.token);
-    const ws = new WebSocket(url.toString());
+    // Token rides in Sec-WebSocket-Protocol rather than the URL, so it never
+    // lands in proxy / server access logs or history.
+    const ws = new WebSocket(this.opts.url, clientSubprotocols(this.opts.token));
     ws.binaryType = "arraybuffer";
     this.ws = ws;
 
@@ -124,7 +125,13 @@ export class WebSocketTransport implements SerialTransport {
 
   private onMessage(ev: MessageEvent): void {
     if (!(ev.data instanceof ArrayBuffer)) return;
-    const frame = decodeFrame(new Uint8Array(ev.data));
+    let frame;
+    try {
+      frame = decodeFrame(new Uint8Array(ev.data));
+    } catch (err) {
+      this.fail(`Malformed frame from tunnel: ${(err as Error).message}`);
+      return;
+    }
     switch (frame.type) {
       case FrameType.DATA:
         try {

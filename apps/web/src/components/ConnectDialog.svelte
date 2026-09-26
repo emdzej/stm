@@ -148,7 +148,7 @@
       />
     </label>
     <label class="mb-2 block text-xs">
-      <span class="block text-muted">Token (optional)</span>
+      <span class="block text-muted">Token</span>
       <input
         type="password"
         class="mt-1 w-full rounded border border-divider bg-base px-2 py-1 font-mono"
@@ -163,8 +163,9 @@
         stm-tunnel --port /dev/ttyUSB0 --listen 127.0.0.1:8787
       </code>
       <div class="mt-1 text-faint">
-        For remote access add <code class="font-mono">--token &lt;secret&gt;</code> and bind
-        a non-loopback host. <code class="font-mono">--tls-cert/--tls-key</code> for
+        The tunnel prints a one-off token on startup — paste it above, or pin one with
+        <code class="font-mono">STM_TUNNEL_TOKEN</code>. For remote access bind a
+        non-loopback host and add <code class="font-mono">--tls-cert/--tls-key</code> for
         <code class="font-mono">wss://</code>.
       </div>
     </div>

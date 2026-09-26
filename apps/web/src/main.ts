@@ -10,11 +10,9 @@ mount(App, { target });
 
 registerSW({
   onRegisteredSW(swUrl) {
-    // eslint-disable-next-line no-console
     console.info("[STM] service worker registered:", swUrl);
   },
   onOfflineReady() {
-    // eslint-disable-next-line no-console
     console.info("[STM] offline-ready");
   },
 });

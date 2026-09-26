@@ -136,24 +136,66 @@ export const DEFAULTS: Settings = {
   theme: "system",
 };
 
+type Json = Record<string, unknown>;
+
+function isObj(v: unknown): v is Json {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+/** Shallow-merge `src` over `defaults`, keeping only keys that exist in
+ * `defaults` and whose value has the same primitive type. Imported JSON is
+ * untrusted — this keeps a hand-edited or malicious file from injecting
+ * wrong-typed values that later blow up (or worse) deep inside the UI. */
+function pickTyped<T extends object>(defaults: T, src: unknown): T {
+  const out = { ...defaults } as Json;
+  if (!isObj(src)) return out as T;
+  for (const [k, def] of Object.entries(defaults)) {
+    const v = src[k];
+    if (v !== undefined && typeof v === typeof def && !isObj(def)) out[k] = v;
+  }
+  return out as T;
+}
+
+/** Keep array entries that are objects carrying the given string fields. */
+function pickList<T>(src: unknown, required: string[], fallback: T[], map: (o: Json) => T): T[] {
+  if (!Array.isArray(src)) return fallback;
+  return src
+    .filter((o): o is Json => isObj(o) && required.every((k) => typeof o[k] === "string"))
+    .map(map);
+}
+
+const DEFAULT_CONFIG = DEFAULTS.connect.config;
+
 /** Merge persisted settings on top of DEFAULTS, recursing into known nested
  * groups so additive schema changes don't lose user values. */
-function merge(parsed: Partial<Settings>): Settings {
+function merge(parsed: Json): Settings {
+  const connect = isObj(parsed.connect) ? parsed.connect : {};
   return {
-    ...DEFAULTS,
-    ...parsed,
-    connect: {
-      ...DEFAULTS.connect,
-      ...(parsed.connect ?? {}),
-      config: { ...DEFAULTS.connect.config, ...(parsed.connect?.config ?? {}) },
-    },
-    monitor: { ...DEFAULTS.monitor, ...(parsed.monitor ?? {}) },
-    terminal: { ...DEFAULTS.terminal, ...(parsed.terminal ?? {}) },
-    logging: { ...DEFAULTS.logging, ...(parsed.logging ?? {}) },
-    serialPresets: parsed.serialPresets ?? DEFAULTS.serialPresets,
-    tunnelProfiles: parsed.tunnelProfiles ?? DEFAULTS.tunnelProfiles,
-    macros: parsed.macros ?? DEFAULTS.macros,
     schemaVersion: SCHEMA_VERSION,
+    theme: pickTyped({ theme: DEFAULTS.theme }, parsed).theme,
+    connect: {
+      ...pickTyped(DEFAULTS.connect, connect),
+      config: pickTyped(DEFAULT_CONFIG, connect.config),
+    },
+    monitor: pickTyped(DEFAULTS.monitor, parsed.monitor),
+    terminal: pickTyped(DEFAULTS.terminal, parsed.terminal),
+    logging: pickTyped(DEFAULTS.logging, parsed.logging),
+    serialPresets: pickList(parsed.serialPresets, ["id", "name"], DEFAULTS.serialPresets, (o) => ({
+      ...pickTyped(DEFAULT_CONFIG, o),
+      id: o.id as string,
+      name: o.name as string,
+    })),
+    tunnelProfiles: pickList(parsed.tunnelProfiles, ["id", "name", "url"], DEFAULTS.tunnelProfiles, (o) => ({
+      id: o.id as string,
+      name: o.name as string,
+      url: o.url as string,
+      ...(typeof o.token === "string" ? { token: o.token } : {}),
+    })),
+    macros: pickList(parsed.macros, ["id", "name", "payload"], DEFAULTS.macros, (o) => ({
+      id: o.id as string,
+      name: o.name as string,
+      payload: o.payload as string,
+    })),
   };
 }
 
@@ -162,8 +204,8 @@ export function load(): Settings {
   const raw = localStorage.getItem(KEY);
   if (!raw) return DEFAULTS;
   try {
-    const parsed = JSON.parse(raw) as Partial<Settings>;
-    if (parsed.schemaVersion !== SCHEMA_VERSION) return DEFAULTS;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isObj(parsed) || parsed.schemaVersion !== SCHEMA_VERSION) return DEFAULTS;
     return merge(parsed);
   } catch {
     return DEFAULTS;
@@ -175,14 +217,27 @@ export function save(settings: Settings): void {
   localStorage.setItem(KEY, JSON.stringify(settings));
 }
 
-export function exportJson(settings: Settings): string {
-  return JSON.stringify(settings, null, 2);
+export interface ExportOptions {
+  /** Include tunnel tokens. Off by default so a shared settings file doesn't
+   * leak credentials. */
+  includeSecrets?: boolean;
+}
+
+export function exportJson(settings: Settings, opts: ExportOptions = {}): string {
+  if (opts.includeSecrets) return JSON.stringify(settings, null, 2);
+  const redacted: Settings = {
+    ...settings,
+    connect: { ...settings.connect, tunnelToken: "" },
+    tunnelProfiles: settings.tunnelProfiles.map(({ token: _token, ...rest }) => rest),
+  };
+  return JSON.stringify(redacted, null, 2);
 }
 
 export function importJson(json: string): Settings {
-  const parsed = JSON.parse(json) as Partial<Settings>;
+  const parsed: unknown = JSON.parse(json);
+  if (!isObj(parsed)) throw new Error("Settings file must contain a JSON object");
   if (parsed.schemaVersion !== SCHEMA_VERSION) {
-    throw new Error(`Incompatible settings version: ${parsed.schemaVersion}`);
+    throw new Error(`Incompatible settings version: ${String(parsed.schemaVersion)}`);
   }
   return merge(parsed);
 }
