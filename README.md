@@ -43,7 +43,7 @@ pnpm workspaces + Turborepo. Svelte 5 runes, Tailwind 3, Vite, vite-plugin-pwa.
 
 ## Install
 
-Requires Node 20+ and pnpm 10+.
+Requires Node 22.12+ and pnpm 10+.
 
 ```
 pnpm install

@@ -13,7 +13,7 @@ await build({
   bundle: true,
   platform: "node",
   format: "esm",
-  target: "node20",
+  target: "node22",
   external: ["commander", "serialport", "ws", "node-pty"],
   banner: { js: "#!/usr/bin/env node" },
   sourcemap: true,
