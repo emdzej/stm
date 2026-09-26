@@ -7,6 +7,106 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-26
+
+Security and maintenance release. It follows a repository audit. **Upgrade
+the tunnel and the web app together** (see *Breaking* below).
+
+### Security
+- **Cross-site WebSocket hijacking in `stm-tunnel` (critical).** Browsers
+  don't apply CORS to WebSockets, so in the default tokenless loopback setup,
+  any page open in the user's browser could connect to
+  `ws://127.0.0.1:8787`. With `--exec` that meant a shell; with `--port`,
+  full access to the serial device. Fixed on two fronts:
+  - **Origin allowlist on by default**: `https://stm.emdzej.pl` plus
+    `http://localhost:*`, `http://127.0.0.1:*` and `http://[::1]:*`.
+    `--allowed-origin` is now repeatable and accepts `scheme://host:*` and
+    `*`. Clients that send no `Origin` header (non-browser tools) are still
+    accepted.
+  - **Token always required.** A random one is generated and printed if none
+    is given. New `STM_TUNNEL_TOKEN` env var, so the token doesn't have to
+    appear in `ps`. `--no-auth` is only accepted for loopback binds in
+    `--port` mode, never with `--exec`.
+- **The token no longer travels in the URL.** The web client now sends it in
+  `Sec-WebSocket-Protocol` (`stm.v1` plus a base64url token entry) instead of
+  `?token=`, which leaked into logs and history. The server compares tokens
+  in constant time. The legacy `?token=` form is still accepted, with a
+  warning, so a cached 0.2.x PWA keeps working.
+- **Runtime validation of wire frames.** OPEN configs (baud rate, data bits,
+  stop bits, parity, flow control), SIGNALS, STATE and ERROR are checked
+  instead of cast. Unknown keys are dropped.
+- **Resource limits.** Inbound frames are capped at 1 MiB (the `ws` default
+  was 100 MiB). Backpressure pauses the serial port or PTY while the client
+  falls behind, instead of buffering without limit. A 30 s heartbeat drops
+  half-open clients that would otherwise hold the single client slot.
+- **`--clean-env`** gives an `--exec` child a minimal environment (`PATH`,
+  `HOME`, `USER`, `SHELL`, locale, `TERM`) instead of everything, cloud
+  credentials included.
+- A non-loopback bind without TLS now prints a cleartext warning.
+- **Settings import is validated.** Wrong-typed values and malformed
+  presets, profiles or macros are dropped instead of loaded. **Exports
+  redact tunnel tokens** unless "Include tokens" is ticked.
+- Dependency audit: 36 advisories (1 critical, 24 high) down to 0. All of
+  them were in dev or build tooling; the shipped runtime deps had none.
+
+### Fixed
+- A second OPEN without CLOSE leaked the first device (an extra PTY process,
+  or a port left locked). Frames are now handled strictly in order, so
+  reconfigure's CLOSE+OPEN can't interleave, and callbacks from a device
+  that has already been closed can't clobber the new one.
+- `--tls-cert` without `--tls-key` (or the reverse) silently fell back to
+  plain `ws://`. It is now an error.
+- `--listen` couldn't parse IPv6. `[::1]:8787` and a bare port now work, and
+  `--baud` is validated.
+- `--exec` split on whitespace, which mangled quoted arguments. Single
+  quotes, double quotes and backslash escapes are now handled.
+- Hardware flow control (`flowControl: "hardware"`) was ignored by the
+  tunnel. It now maps to `rtscts`.
+- An unplugged serial device is reported to the client instead of going
+  quiet. A PTY that exits resets state so the client can reopen.
+- Plain HTTP requests to the tunnel hung. They now get `426 Upgrade
+  Required`.
+- The web client crashed on a malformed tunnel frame. It now reports an
+  error instead.
+- Settings import didn't apply macros or the logging preference.
+- Opacity-modified theme colours (`bg-danger/10`, `bg-warning/10`,
+  `border-warning/40`) were silently dropped by Tailwind 3 for `var()`
+  colours. They now render, so the warning box and the "Remove" hover
+  states get their intended tint.
+- The xterm WebGL renderer is disposed on GPU context loss, so the terminal
+  falls back to the DOM renderer instead of going blank.
+
+### Changed
+- **Breaking:** the tunnel requires a token by default. The Connect dialog's
+  token field is no longer "optional". Paste the token the tunnel prints, or
+  pin one with `STM_TUNNEL_TOKEN`.
+- **Breaking:** a self-hosted web app on an origin other than the defaults
+  must be allowed with `--allowed-origin`.
+- **Breaking:** Node.js **22.12+** is now required (Node 20 reached end of
+  life in April 2026; vitest 5 and commander 15 need 22.12).
+- `@emdzej/stm-theme` now ships a Tailwind v4 CSS theme (`theme.css`) in
+  place of the v3 JS preset.
+- The CLI is now linted, has its own test suite, and supports `--version`.
+
+### Dependencies
+- Runtime: commander 15, serialport 13, ws 8.22, node-pty 1.1, xterm 6
+  (addon-fit 0.11, addon-web-links 0.12, addon-webgl 0.19).
+- Tooling: Vite 8 (Rolldown), @sveltejs/vite-plugin-svelte 7, Tailwind CSS
+  4 (`@tailwindcss/vite`; PostCSS and autoprefixer removed), Vitest 5,
+  TypeScript 6.0, ESLint 10, typescript-eslint 8.70, esbuild 0.28, Svelte
+  5.57, svelte-check 4.7, turbo 2.11, prettier 3.9.
+- Scoped pnpm overrides for transitive `brace-expansion` and `fast-uri`.
+- **Held back:** TypeScript 7. `typescript-eslint` (`<6.1`) and
+  `svelte-check` (`^5 || ^6`) don't support it yet.
+
+### CI
+- All actions pinned to commit SHAs (latest majors), with
+  `persist-credentials: false`.
+- CI: explicit `contents: read`, Node 22 + 24 matrix, `pnpm audit` gate.
+- Publish: npm pinned (was `@latest`), manual runs only from `main`, the
+  release tag must match the package version, and tests run before publish.
+- Dependabot for npm and GitHub Actions.
+
 ## [0.2.0] - 2026-06-04
 
 ### Added
@@ -162,6 +262,7 @@ Initial release.
 - Settings dialog content is currently a placeholder — JSON import/export and a preset library land in a follow-up release.
 - X / Y / ZMODEM file transfer and OPFS session logging are scaffolded but not yet implemented.
 
-[Unreleased]: https://github.com/emdzej/stm/compare/0.2.0...HEAD
+[Unreleased]: https://github.com/emdzej/stm/compare/0.3.0...HEAD
+[0.3.0]: https://github.com/emdzej/stm/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/emdzej/stm/releases/tag/0.2.0
 [0.1.0]: https://github.com/emdzej/stm/releases/tag/0.1.0

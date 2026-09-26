@@ -1,5 +1,7 @@
 import { build } from "esbuild";
-import { rmSync, chmodSync } from "node:fs";
+import { rmSync, chmodSync, readFileSync } from "node:fs";
+
+const { version } = JSON.parse(readFileSync("package.json", "utf8"));
 
 rmSync("dist", { recursive: true, force: true });
 
@@ -16,6 +18,7 @@ await build({
   target: "node22",
   external: ["commander", "serialport", "ws", "node-pty"],
   banner: { js: "#!/usr/bin/env node" },
+  define: { __STM_TUNNEL_VERSION__: JSON.stringify(version) },
   sourcemap: true,
   logLevel: "info",
 });

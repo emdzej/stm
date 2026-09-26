@@ -171,7 +171,7 @@ Currently persisted: theme choice (system/light/dark), Connect dialog state (tra
 
 ## Status
 
-Working in 0.2.0:
+Working in 0.3.0:
 - Monitor mode — ASCII + virtualised HEX views (hundreds of thousands of
   rows), ASCII/HEX composer, configurable line endings, pause/clear/save,
   optional local echo of sent bytes.

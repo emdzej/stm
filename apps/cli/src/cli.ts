@@ -11,6 +11,10 @@ import {
   type ListenAddress,
 } from "./options.js";
 
+// Injected by esbuild; `tsx` dev runs fall back to "dev".
+declare const __STM_TUNNEL_VERSION__: string | undefined;
+const VERSION = typeof __STM_TUNNEL_VERSION__ === "string" ? __STM_TUNNEL_VERSION__ : "dev";
+
 const program = new Command();
 
 function collect(value: string, previous: string[] | undefined): string[] {
@@ -33,6 +37,7 @@ function parseListenOpt(value: string): ListenAddress {
 
 program
   .name("stm-tunnel")
+  .version(VERSION)
   .description("Bridge a serial port (or a PTY-hosted command) to a WebSocket so browsers without Web Serial can connect.")
   .option("-p, --port <path>", "Serial port path (e.g. /dev/ttyUSB0, COM3)")
   .option(
