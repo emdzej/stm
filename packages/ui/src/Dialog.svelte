@@ -10,7 +10,7 @@
     children: Snippet;
   }
 
-  let { open, onClose, label, width = "w-[28rem]", children }: Props = $props();
+  let { open, onClose, label, width = "w-md", children }: Props = $props();
 
   function onKey(e: KeyboardEvent): void {
     if (e.key === "Escape") onClose();
@@ -29,7 +29,7 @@
     ></button>
     <div class="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
       <div
-        class="pointer-events-auto {width} max-h-full max-w-full overflow-y-auto rounded border border-divider bg-surface p-4 text-sm shadow-xl"
+        class="pointer-events-auto {width} max-h-full max-w-full overflow-y-auto rounded-sm border border-divider bg-surface p-4 text-sm shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-label={label}

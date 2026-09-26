@@ -55,7 +55,7 @@
   <div class="mb-3 flex items-center gap-2 text-xs">
     <span class="text-muted">Preset</span>
     <select
-      class="flex-1 rounded border border-divider bg-base px-2 py-1 font-mono"
+      class="flex-1 rounded-sm border border-divider bg-base px-2 py-1 font-mono"
       onchange={(e) => pickPreset((e.currentTarget as HTMLSelectElement).value)}
     >
       <option value="">(custom)</option>
@@ -69,7 +69,7 @@
       <input
         type="text"
         placeholder="Preset name"
-        class="w-32 rounded border border-divider bg-base px-2 py-1 font-mono"
+        class="w-32 rounded-sm border border-divider bg-base px-2 py-1 font-mono"
         bind:value={savingName}
         onkeydown={(e) => e.key === "Enter" && confirmSave()}
       />

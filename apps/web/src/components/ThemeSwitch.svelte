@@ -14,8 +14,8 @@
 
   function btnClass(active: boolean): string {
     return active
-      ? "rounded p-1 text-accent transition"
-      : "rounded p-1 text-faint transition hover:text-foreground";
+      ? "rounded-sm p-1 text-accent transition"
+      : "rounded-sm p-1 text-faint transition hover:text-foreground";
   }
 </script>
 

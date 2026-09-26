@@ -171,7 +171,7 @@
     <MacroPicker />
     <button
       class={paused
-        ? "rounded border border-warning bg-surface px-2 py-0.5 text-warning transition hover:bg-elevated"
+        ? "rounded-sm border border-warning bg-surface px-2 py-0.5 text-warning transition hover:bg-elevated"
         : BUTTON_SECONDARY}
       onclick={() => (paused = !paused)}
     >
@@ -211,7 +211,7 @@
       <input
         bind:this={composerInput}
         type="text"
-        class="flex-1 rounded border border-divider bg-base px-2 py-1 font-mono"
+        class="flex-1 rounded-sm border border-divider bg-base px-2 py-1 font-mono"
         placeholder={settings.monitor.composerMode === "ascii"
           ? "Type and press Enter…"
           : "Hex bytes, e.g. DE AD BE EF"}

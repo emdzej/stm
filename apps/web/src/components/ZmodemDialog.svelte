@@ -32,7 +32,7 @@
   }
 </script>
 
-<Dialog {open} onClose={dismissXfer} label={title} width="w-[28rem]">
+<Dialog {open} onClose={dismissXfer} label={title} width="w-md">
   <h2 class="mb-3 font-semibold">{title}</h2>
 
   {#if xfer.state.kind === "sending-handshake"}
@@ -53,7 +53,7 @@
     </p>
     {#if xfer.state.size > 0}
       {@const pct = Math.round((xfer.state.sent / xfer.state.size) * 100)}
-      <div class="mb-2 h-2 overflow-hidden rounded border border-divider bg-base">
+      <div class="mb-2 h-2 overflow-hidden rounded-sm border border-divider bg-base">
         <div class="h-full bg-accent transition-all" style="width: {pct}%"></div>
       </div>
       <div class="text-xs font-mono text-faint">
@@ -68,7 +68,7 @@
     <p class="mb-3 text-xs text-muted">
       The remote device is offering a file:
     </p>
-    <div class="mb-3 rounded border border-divider bg-base p-3 font-mono text-xs">
+    <div class="mb-3 rounded-sm border border-divider bg-base p-3 font-mono text-xs">
       <div class="font-semibold text-foreground">{xfer.state.filename}</div>
       <div class="text-faint">{formatBytes(xfer.state.size)}</div>
     </div>
@@ -82,7 +82,7 @@
     </p>
     {#if xfer.state.size > 0}
       {@const pct = Math.round((xfer.state.received / xfer.state.size) * 100)}
-      <div class="mb-2 h-2 overflow-hidden rounded border border-divider bg-base">
+      <div class="mb-2 h-2 overflow-hidden rounded-sm border border-divider bg-base">
         <div class="h-full bg-accent transition-all" style="width: {pct}%"></div>
       </div>
       <div class="text-xs font-mono text-faint">

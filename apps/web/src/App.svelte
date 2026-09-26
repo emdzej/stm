@@ -89,7 +89,7 @@
 
     {#if bridge.activeConfig}
       <button
-        class="rounded border border-divider bg-surface px-2 py-0.5 font-mono text-xs text-muted transition hover:border-accent hover:bg-elevated"
+        class="rounded-sm border border-divider bg-surface px-2 py-0.5 font-mono text-xs text-muted transition hover:border-accent hover:bg-elevated"
         onclick={() => (app.showReconfigure = true)}
         title="Reconfigure port"
       >
@@ -101,7 +101,7 @@
     <ConnectButton />
     <button
       type="button"
-      class="rounded p-1 text-faint transition hover:text-foreground"
+      class="rounded-sm p-1 text-faint transition hover:text-foreground"
       onclick={() => (app.showSettings = true)}
       title="Settings"
       aria-label="Settings"

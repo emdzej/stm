@@ -79,7 +79,7 @@
   }
 </script>
 
-<Dialog open={app.showConnect} onClose={close} label="Connect" width="w-[34rem]">
+<Dialog open={app.showConnect} onClose={close} label="Connect" width="w-136">
   <h2 class="mb-3 font-semibold">Connect</h2>
 
   <SegmentedControl
@@ -110,7 +110,7 @@
         <select
           value={selectedProfileId}
           onchange={(e) => pickProfile((e.currentTarget as HTMLSelectElement).value)}
-          class="flex-1 rounded border border-divider bg-base px-2 py-1 font-mono"
+          class="flex-1 rounded-sm border border-divider bg-base px-2 py-1 font-mono"
         >
           <option value="new">New connection</option>
           {#each settings.tunnelProfiles as p (p.id)}
@@ -123,7 +123,7 @@
           <input
             type="text"
             placeholder="Profile name"
-            class="w-32 rounded border border-divider bg-base px-2 py-1 font-mono"
+            class="w-32 rounded-sm border border-divider bg-base px-2 py-1 font-mono"
             bind:value={savingName}
             onkeydown={(e) => e.key === "Enter" && confirmSaveProfile()}
           />
@@ -142,7 +142,7 @@
       <span class="block text-muted">Tunnel URL</span>
       <input
         type="text"
-        class="mt-1 w-full rounded border border-divider bg-base px-2 py-1 font-mono"
+        class="mt-1 w-full rounded-sm border border-divider bg-base px-2 py-1 font-mono"
         bind:value={settings.connect.tunnelUrl}
         placeholder="ws://127.0.0.1:8787"
       />
@@ -151,11 +151,11 @@
       <span class="block text-muted">Token</span>
       <input
         type="password"
-        class="mt-1 w-full rounded border border-divider bg-base px-2 py-1 font-mono"
+        class="mt-1 w-full rounded-sm border border-divider bg-base px-2 py-1 font-mono"
         bind:value={settings.connect.tunnelToken}
       />
     </label>
-    <div class="mb-3 rounded border border-divider bg-base px-2 py-2 text-xs text-muted">
+    <div class="mb-3 rounded-sm border border-divider bg-base px-2 py-2 text-xs text-muted">
       <div class="mb-1 text-faint">
         Run on the host with the device attached:
       </div>

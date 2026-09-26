@@ -10,7 +10,7 @@
   </h1>
   <p class="mb-6 text-muted">Bytes in. Bytes out. Dark mode.</p>
 
-  <div class="mb-4 rounded border border-divider bg-surface p-4">
+  <div class="mb-4 rounded-sm border border-divider bg-surface p-4">
     <h2 class="mb-2 font-semibold">Get started</h2>
     <ol class="ml-4 list-decimal space-y-1 text-muted">
       <li>Hit <span class="text-foreground">Connect</span> in the top right.</li>
@@ -20,7 +20,7 @@
   </div>
 
   {#if !isWebSerialAvailable()}
-    <div class="rounded border border-warning/40 bg-warning/10 p-3 text-xs text-warning">
+    <div class="rounded-sm border border-warning/40 bg-warning/10 p-3 text-xs text-warning">
       <strong>Heads-up:</strong> Web Serial isn't available in this browser. Use Chrome,
       Edge, or another Chromium browser — or run the tunnel CLI on a machine with the
       device attached and connect via WebSocket.

@@ -1,5 +1,37 @@
-@import "@emdzej/stm-theme/tokens.css";
+@import "tailwindcss";
+@import "@emdzej/stm-theme/theme.css";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Shared components live outside the Vite root, so point the scanner at them. */
+@source "../../../packages/ui/src";
+
+@theme {
+  --color-accent: #3b82f6;
+  --color-accent-muted: #1d4ed8;
+}
+
+/*
+ * Tailwind v3 compatibility. v4 changed a few preflight defaults; keep the
+ * v3 look until these are deliberately revisited.
+ */
+@layer base {
+  /* v4 defaults borders to currentColor; v3 used gray-200. */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  /* v4 buttons use cursor: default. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  /* v4 placeholders are 50% currentColor; v3 used gray-400. */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+}

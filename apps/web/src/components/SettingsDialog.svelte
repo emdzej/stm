@@ -69,7 +69,7 @@
   }
 </script>
 
-<Dialog open={app.showSettings} onClose={close} label="Settings" width="w-[36rem]">
+<Dialog open={app.showSettings} onClose={close} label="Settings" width="w-xl">
   <h2 class="mb-3 font-semibold">Settings</h2>
 
   <section class="mb-5">
@@ -91,7 +91,7 @@
       <label class="flex items-center gap-2 text-muted">
         <input
           type="checkbox"
-          class="rounded border-divider"
+          class="rounded-sm border-divider"
           bind:checked={settings.monitor.echoLocal}
         />
         Echo sent bytes locally in the stream view
@@ -140,7 +140,7 @@
             type="number"
             min="20"
             max="500"
-            class="w-20 rounded border border-divider bg-base px-2 py-1 font-mono"
+            class="w-20 rounded-sm border border-divider bg-base px-2 py-1 font-mono"
             bind:value={settings.terminal.cols}
           />
         </label>
@@ -150,7 +150,7 @@
             type="number"
             min="10"
             max="200"
-            class="w-20 rounded border border-divider bg-base px-2 py-1 font-mono"
+            class="w-20 rounded-sm border border-divider bg-base px-2 py-1 font-mono"
             bind:value={settings.terminal.rows}
           />
         </label>
@@ -161,14 +161,14 @@
           type="number"
           min="8"
           max="32"
-          class="w-20 rounded border border-divider bg-base px-2 py-1 font-mono"
+          class="w-20 rounded-sm border border-divider bg-base px-2 py-1 font-mono"
           bind:value={settings.terminal.fontSize}
         />
       </label>
       <label class="flex items-center gap-2 text-muted">
         <input
           type="checkbox"
-          class="rounded border-divider"
+          class="rounded-sm border-divider"
           bind:checked={settings.terminal.localEcho}
         />
         Local echo (useful for devices that don't echo input)
@@ -176,7 +176,7 @@
       <label class="flex items-center gap-2 text-muted">
         <input
           type="checkbox"
-          class="rounded border-divider"
+          class="rounded-sm border-divider"
           bind:checked={settings.terminal.eightBitClean}
         />
         8-bit clean (off → strip high bit on incoming bytes)
@@ -198,7 +198,7 @@
         <label class="flex items-center gap-2 text-muted">
           <input
             type="checkbox"
-            class="rounded border-divider"
+            class="rounded-sm border-divider"
             bind:checked={settings.logging.enabled}
           />
           Record every connected session's incoming bytes
@@ -230,7 +230,7 @@
           <div class="flex flex-wrap items-center gap-2">
             <input
               type="text"
-              class="w-32 rounded border border-divider bg-base px-2 py-1 font-mono"
+              class="w-32 rounded-sm border border-divider bg-base px-2 py-1 font-mono"
               bind:value={settings.serialPresets[idx].name}
               placeholder="Name"
             />
@@ -239,7 +239,7 @@
               · flow:{p.flowControl}
             </span>
             <button
-              class="rounded border border-danger bg-surface px-2 py-0.5 text-danger transition hover:bg-danger/10"
+              class="rounded-sm border border-danger bg-surface px-2 py-0.5 text-danger transition hover:bg-danger/10"
               onclick={() => {
                 if (confirm(`Delete serial preset "${p.name}"?`)) {
                   settings.serialPresets = settings.serialPresets.filter(
@@ -272,18 +272,18 @@
         <div class="flex flex-wrap items-center gap-2">
           <input
             type="text"
-            class="w-28 rounded border border-divider bg-base px-2 py-1 font-mono"
+            class="w-28 rounded-sm border border-divider bg-base px-2 py-1 font-mono"
             bind:value={settings.macros[idx].name}
             placeholder="Name"
           />
           <input
             type="text"
-            class="flex-1 min-w-[12rem] rounded border border-divider bg-base px-2 py-1 font-mono"
+            class="flex-1 min-w-48 rounded-sm border border-divider bg-base px-2 py-1 font-mono"
             bind:value={settings.macros[idx].payload}
             placeholder="e.g. AT+CSQ\r"
           />
           <button
-            class="rounded border border-danger bg-surface px-2 py-0.5 text-danger transition hover:bg-danger/10"
+            class="rounded-sm border border-danger bg-surface px-2 py-0.5 text-danger transition hover:bg-danger/10"
             onclick={() => {
               if (confirm(`Delete macro "${m.name}"?`)) {
                 settings.macros = settings.macros.filter((x) => x.id !== m.id);
@@ -324,24 +324,24 @@
           <div class="flex flex-wrap items-center gap-2">
             <input
               type="text"
-              class="w-28 rounded border border-divider bg-base px-2 py-1 font-mono"
+              class="w-28 rounded-sm border border-divider bg-base px-2 py-1 font-mono"
               bind:value={settings.tunnelProfiles[idx].name}
               placeholder="Name"
             />
             <input
               type="text"
-              class="flex-1 min-w-[12rem] rounded border border-divider bg-base px-2 py-1 font-mono"
+              class="flex-1 min-w-48 rounded-sm border border-divider bg-base px-2 py-1 font-mono"
               bind:value={settings.tunnelProfiles[idx].url}
               placeholder="ws://host:port"
             />
             <input
               type="password"
-              class="w-28 rounded border border-divider bg-base px-2 py-1 font-mono"
+              class="w-28 rounded-sm border border-divider bg-base px-2 py-1 font-mono"
               bind:value={settings.tunnelProfiles[idx].token}
               placeholder="token"
             />
             <button
-              class="rounded border border-danger bg-surface px-2 py-0.5 text-danger transition hover:bg-danger/10"
+              class="rounded-sm border border-danger bg-surface px-2 py-0.5 text-danger transition hover:bg-danger/10"
               onclick={() => {
                 if (confirm(`Delete tunnel profile "${p.name}"?`)) {
                   settings.tunnelProfiles = settings.tunnelProfiles.filter(
@@ -372,7 +372,7 @@
       </label>
       <span class="flex-1"></span>
       <button
-        class="rounded border border-warning bg-surface px-2 py-0.5 text-warning transition hover:bg-warning/10"
+        class="rounded-sm border border-warning bg-surface px-2 py-0.5 text-warning transition hover:bg-warning/10"
         onclick={resetToDefaults}
       >
         Reset to defaults

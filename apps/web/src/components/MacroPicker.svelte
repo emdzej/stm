@@ -26,7 +26,7 @@
   </button>
 {:else}
   <select
-    class="rounded border border-divider bg-surface px-2 py-0.5 text-muted transition hover:border-rule hover:bg-elevated hover:text-foreground"
+    class="rounded-sm border border-divider bg-surface px-2 py-0.5 text-muted transition hover:border-rule hover:bg-elevated hover:text-foreground"
     title="Run a saved macro"
     onchange={(e) => {
       const id = (e.currentTarget as HTMLSelectElement).value;

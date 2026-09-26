@@ -121,9 +121,9 @@
 
   <div class="flex flex-wrap items-center gap-2 border-t border-divider bg-surface px-3 py-2 text-xs">
     <!-- Serial line break: not a character, asserts BRK signal -->
-    <div class="flex gap-1 rounded border border-divider bg-elevated p-0.5">
+    <div class="flex gap-1 rounded-sm border border-divider bg-elevated p-0.5">
       <button
-        class="rounded px-2 py-0.5 text-muted hover:bg-base hover:text-foreground"
+        class="rounded-sm px-2 py-0.5 text-muted hover:bg-base hover:text-foreground"
         title="Assert serial line BRK signal (~250ms)"
         onclick={sendBreak}
       >
@@ -132,37 +132,37 @@
     </div>
 
     <!-- POSIX signals & telnet/screen escapes -->
-    <div class="flex gap-1 rounded border border-divider bg-elevated p-0.5">
+    <div class="flex gap-1 rounded-sm border border-divider bg-elevated p-0.5">
       <button
-        class="rounded px-2 py-0.5 font-mono text-muted hover:bg-base hover:text-foreground"
+        class="rounded-sm px-2 py-0.5 font-mono text-muted hover:bg-base hover:text-foreground"
         title="SIGINT (0x03)"
         onclick={() => send(CTRL.C)}
       >
         ^C
       </button>
       <button
-        class="rounded px-2 py-0.5 font-mono text-muted hover:bg-base hover:text-foreground"
+        class="rounded-sm px-2 py-0.5 font-mono text-muted hover:bg-base hover:text-foreground"
         title="EOF (0x04)"
         onclick={() => send(CTRL.D)}
       >
         ^D
       </button>
       <button
-        class="rounded px-2 py-0.5 font-mono text-muted hover:bg-base hover:text-foreground"
+        class="rounded-sm px-2 py-0.5 font-mono text-muted hover:bg-base hover:text-foreground"
         title="SIGTSTP / suspend (0x1A)"
         onclick={() => send(CTRL.Z)}
       >
         ^Z
       </button>
       <button
-        class="rounded px-2 py-0.5 font-mono text-muted hover:bg-base hover:text-foreground"
+        class="rounded-sm px-2 py-0.5 font-mono text-muted hover:bg-base hover:text-foreground"
         title="SIGQUIT (0x1C)"
         onclick={() => send(CTRL.BS)}
       >
         ^\
       </button>
       <button
-        class="rounded px-2 py-0.5 font-mono text-muted hover:bg-base hover:text-foreground"
+        class="rounded-sm px-2 py-0.5 font-mono text-muted hover:bg-base hover:text-foreground"
         title="Telnet escape / screen prefix (0x1D)"
         onclick={() => send(CTRL.RB)}
       >
@@ -171,16 +171,16 @@
     </div>
 
     <!-- Editing keys browsers often eat -->
-    <div class="flex gap-1 rounded border border-divider bg-elevated p-0.5">
+    <div class="flex gap-1 rounded-sm border border-divider bg-elevated p-0.5">
       <button
-        class="rounded px-2 py-0.5 font-mono text-muted hover:bg-base hover:text-foreground"
+        class="rounded-sm px-2 py-0.5 font-mono text-muted hover:bg-base hover:text-foreground"
         title="Escape (0x1B)"
         onclick={() => send(CTRL.ESC)}
       >
         Esc
       </button>
       <button
-        class="rounded px-2 py-0.5 font-mono text-muted hover:bg-base hover:text-foreground"
+        class="rounded-sm px-2 py-0.5 font-mono text-muted hover:bg-base hover:text-foreground"
         title="Tab (0x09)"
         onclick={() => send(CTRL.TAB)}
       >
@@ -189,10 +189,10 @@
     </div>
 
     <!-- Function keys -->
-    <div class="flex gap-1 rounded border border-divider bg-elevated p-0.5">
+    <div class="flex gap-1 rounded-sm border border-divider bg-elevated p-0.5">
       {#each FN_KEYS as fk (fk.label)}
         <button
-          class="rounded px-1.5 py-0.5 font-mono text-muted hover:bg-base hover:text-foreground"
+          class="rounded-sm px-1.5 py-0.5 font-mono text-muted hover:bg-base hover:text-foreground"
           title="{fk.label} — hold Shift / Alt / Ctrl while clicking for modified xterm sequence"
           onclick={(e) => send(fnKeySeq(fk, modFromEvent(e)))}
         >

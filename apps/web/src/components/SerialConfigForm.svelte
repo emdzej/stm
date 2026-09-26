@@ -22,7 +22,7 @@
       type="number"
       min="50"
       step="1"
-      class="w-24 rounded border border-divider bg-base px-2 py-1 font-mono"
+      class="w-24 rounded-sm border border-divider bg-base px-2 py-1 font-mono"
       placeholder="custom"
       value={config.baudRate}
       oninput={(e) => {

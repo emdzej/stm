@@ -108,7 +108,7 @@
   }
 </script>
 
-<Dialog open={app.showLogs} onClose={close} label="Session logs" width="w-[48rem]">
+<Dialog open={app.showLogs} onClose={close} label="Session logs" width="w-3xl">
   <div class="mb-3 flex items-center gap-2">
     <h2 class="font-semibold">Session logs</h2>
     <span class="flex-1"></span>
@@ -132,7 +132,7 @@
       {#each sessions as s (s.id)}
         {@const isCurrent = logging.current?.id === s.id}
         <div
-          class="rounded border bg-surface px-3 py-2"
+          class="rounded-sm border bg-surface px-3 py-2"
           class:border-divider={!isCurrent}
           class:border-accent={isCurrent}
         >
@@ -140,7 +140,7 @@
             {#if editingId === s.id}
               <input
                 type="text"
-                class="flex-1 rounded border border-divider bg-base px-2 py-0.5 font-mono"
+                class="flex-1 rounded-sm border border-divider bg-base px-2 py-0.5 font-mono"
                 bind:value={editingLabel}
                 placeholder="Label"
                 onkeydown={(e) => {
@@ -159,7 +159,7 @@
                 {s.label || "(unlabelled)"}
               </button>
               {#if isCurrent}
-                <span class="rounded bg-accent px-1.5 py-0.5 text-[10px] text-white">
+                <span class="rounded-sm bg-accent px-1.5 py-0.5 text-[10px] text-white">
                   RECORDING
                 </span>
               {/if}
@@ -168,7 +168,7 @@
                 Export
               </button>
               <button
-                class="rounded border border-danger bg-surface px-2 py-0.5 text-danger transition hover:bg-danger/10"
+                class="rounded-sm border border-danger bg-surface px-2 py-0.5 text-danger transition hover:bg-danger/10"
                 onclick={() => deleteSession(s)}
               >
                 Delete

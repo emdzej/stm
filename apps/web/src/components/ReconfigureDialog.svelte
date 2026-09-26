@@ -46,7 +46,7 @@
   }
 </script>
 
-<Dialog open={app.showReconfigure} onClose={close} label="Reconfigure port" width="w-[34rem]">
+<Dialog open={app.showReconfigure} onClose={close} label="Reconfigure port" width="w-136">
   <h2 class="mb-3 font-semibold">Reconfigure port</h2>
   <p class="mb-3 text-xs text-muted">
     Applies new serial parameters to the currently-open port without re-prompting.

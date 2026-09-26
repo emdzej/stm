@@ -26,7 +26,7 @@
 </script>
 
 <button
-  class="rounded border px-2 py-0.5 text-xs transition"
+  class="rounded-sm border px-2 py-0.5 text-xs transition"
   class:border-accent={app.connection.kind === "connected"}
   class:text-accent={app.connection.kind === "connected"}
   class:border-divider={app.connection.kind !== "connected"}

@@ -1,0 +1,32 @@
+/*
+ * Tailwind v4 theme for STM. Import after `tailwindcss`:
+ *
+ *   @import "tailwindcss";
+ *   @import "@emdzej/stm-theme/theme.css";
+ *
+ * Semantic colors resolve to the runtime tokens in tokens.css, so light/dark
+ * flips by toggling `.dark` on <html> without regenerating utilities.
+ * `inline` makes utilities reference the token directly, which is what lets
+ * opacity modifiers (`bg-danger/10`) work via color-mix().
+ */
+@import "./tokens.css" layer(base);
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-base: var(--theme-bg-base);
+  --color-surface: var(--theme-bg-surface);
+  --color-elevated: var(--theme-bg-elevated);
+  --color-foreground: var(--theme-text-foreground);
+  --color-muted: var(--theme-text-muted);
+  --color-faint: var(--theme-text-faint);
+  --color-divider: var(--theme-border-divider);
+  --color-rule: var(--theme-border-rule);
+  --color-success: var(--theme-color-success);
+  --color-warning: var(--theme-color-warning);
+  --color-danger: var(--theme-color-danger);
+}
+
+@theme {
+  --font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+}
