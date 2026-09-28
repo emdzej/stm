@@ -105,6 +105,8 @@ the tunnel and the web app together** (see *Breaking* below).
 - CI: explicit `contents: read`, Node 22 + 24 matrix, `pnpm audit` gate.
 - Publish: npm pinned (was `@latest`), manual runs only from `main`, the
   release tag must match the package version, and tests run before publish.
+- `@emdzej/stm-tunnel` declares `repository`. npm rejected every CI publish
+  with provenance without it (E422), so 0.2.0 never reached npm.
 - Dependabot for npm and GitHub Actions.
 
 ## [0.2.0] - 2026-06-04

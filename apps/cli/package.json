@@ -1,7 +1,16 @@
 {
   "name": "@emdzej/stm-tunnel",
   "version": "0.3.0",
-  "description": "WebSocket bridge for the STM web serial monitor — exposes a serial port (or a PTY-hosted command) to a browser.",
+  "description": "WebSocket bridge for the STM web serial monitor \u2014 exposes a serial port (or a PTY-hosted command) to a browser.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emdzej/stm.git",
+    "directory": "apps/cli"
+  },
+  "homepage": "https://github.com/emdzej/stm/tree/main/apps/cli#readme",
+  "bugs": {
+    "url": "https://github.com/emdzej/stm/issues"
+  },
   "type": "module",
   "bin": {
     "stm-tunnel": "./dist/cli.js"
